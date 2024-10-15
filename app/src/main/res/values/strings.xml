@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">WxStepLog</string>
+    <string name="assists_description">使用本服务监听微信指定好友或所有好友步数</string>
+</resources>
