@@ -2,8 +2,9 @@ package com.equationl.wxsteplog
 
 import android.app.Application
 import com.equationl.wxsteplog.util.log.LogUtil
+import dagger.hilt.android.HiltAndroidApp
 
-
+@HiltAndroidApp
 class App: Application() {
 
     companion object {
