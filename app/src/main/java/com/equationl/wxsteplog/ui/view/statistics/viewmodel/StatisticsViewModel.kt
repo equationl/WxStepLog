@@ -16,7 +16,6 @@ import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowRange
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowType
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsState
 import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
-import com.equationl.wxsteplog.util.DateTimeUtil.toTimestamp
 import com.equationl.wxsteplog.util.ResolveDataUtil
 import com.equationl.wxsteplog.util.Utils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -121,28 +120,9 @@ class StatisticsViewModel @Inject constructor(
         val rawDataList = db.manHoursDB().queryRangeDataList(_uiState.value.showRange.start, _uiState.value.showRange.end, 1, Int.MAX_VALUE)
         val resolveResult = resolveData(rawDataList, _uiState.value.filter)
 
-        val charList = mutableMapOf<String, MutableList<StatisticsChartData>>()
-        val chartXLabelList = mutableMapOf<Number, String>()
+        var charList = mapOf<String, List<StatisticsChartData>>()
         if (_uiState.value.showType == StatisticsShowType.Chart) {
-            for (item in resolveResult) {
-                val currentData = charList[item.userName] ?: mutableListOf()
-                var lineData = currentData.find { it.label == item.headerTitle }
-                if (lineData == null) {
-                    lineData = StatisticsChartData(
-                        mutableListOf(),
-                        mutableListOf(),
-                        item.headerTitle,
-                        Utils.getRandomColor(item.headerTitle.toTimestamp("yyyy-MM-dd")),
-                    )
-                    currentData.add(lineData)
-                }
-                val xValue = item.logTime.formatDateTime("HHmm").toInt()
-                lineData.x.add(xValue)
-                lineData.y.add(item.stepNum)
-                chartXLabelList[xValue] = item.logTime.formatDateTime("HH:mm")
-
-                charList[item.userName] = currentData
-            }
+            charList = ResolveDataUtil.resolveChartData(resolveResult)
         }
 
         _uiState.update {
@@ -150,7 +130,6 @@ class StatisticsViewModel @Inject constructor(
                 isLoading = false,
                 dataList = resolveResult,
                 chartData = charList,
-                chartXLabelData = chartXLabelList
             )
         }
     }

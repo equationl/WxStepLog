@@ -399,7 +399,7 @@ private fun ChartContent(
         for (userChartData in state.chartData) {
             Text(userChartData.key, style = MaterialTheme.typography.labelSmall)
             Spacer(modifier = Modifier.height(8.dp))
-            LineSeriesChart(userChartData.value, state.chartXLabelData)
+            LineSeriesChart(userChartData.value)
             Spacer(modifier = Modifier.height(16.dp))
         }
     }

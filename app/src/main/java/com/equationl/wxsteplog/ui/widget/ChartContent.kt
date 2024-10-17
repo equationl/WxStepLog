@@ -57,8 +57,7 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun LineSeriesChart(
-    dataList: List<StatisticsChartData>,
-    xLabel: Map<Number, String>
+    dataList: List<StatisticsChartData>
 ) {
     Log.i("el", "LineSeriesChart: $dataList")
     val modelProducer = remember { CartesianChartModelProducer() }
@@ -108,7 +107,9 @@ fun LineSeriesChart(
                 // 好像不支持这样做，那只能缩短间隔，以半小时为间隔来显示了， 而不是现在的以分钟为间隔
                 itemPlacer = HorizontalAxis.ItemPlacer.segmented(),
                 valueFormatter =  { _, x, _ ->
-                    xLabel[x.toInt()] ?: x.toString()
+                    // TODO 格式化成日期
+                    x.toString()
+                    //xLabel[x.toInt()] ?: x.toString()
                 },
                 labelRotationDegrees = 90f,
             ),

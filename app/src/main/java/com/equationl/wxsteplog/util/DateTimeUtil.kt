@@ -19,7 +19,7 @@ object DateTimeUtil {
 
     fun String.toTimestamp(format: String = "yyyy-MM-dd HH:mm:ss"): Long {
         val date = SimpleDateFormat(format, Locale.getDefault()).parse(this)
-        return date?.time ?: 0L
+        return (date?.time ?: 0L).coerceAtLeast(0)
     }
 
     fun getWeeOfToday(): Long {

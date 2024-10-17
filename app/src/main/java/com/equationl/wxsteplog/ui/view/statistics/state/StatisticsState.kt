@@ -10,8 +10,6 @@ data class StatisticsState(
     val dataList: List<StaticsScreenModel> = listOf(),
     /** {"user": list} */
     val chartData: Map<String, List<StatisticsChartData>> = mapOf(),
-    /** X 轴标签列表 {xValue: title}*/
-    val chartXLabelData: Map<Number, String> = mapOf(),
     val showRange: StatisticsShowRange = DateTimeUtil.getCurrentDayRange(), // 默认今天
     val showType: StatisticsShowType = StatisticsShowType.List,
     val listState: LazyListState = LazyListState(),
