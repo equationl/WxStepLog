@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.util.Log
+import androidx.compose.ui.graphics.Color
+import kotlin.random.Random
 
 object Utils {
 
@@ -19,5 +21,14 @@ object Utils {
         val activity = context.findActivity() ?: return
         //val originalOrientation = activity.requestedOrientation
         activity.requestedOrientation = orientation
+    }
+
+    fun getRandomColor(seed: Long): Color {
+        val random = Random(seed)
+        return Color(
+            random.nextInt(256),
+            random.nextInt(256),
+            random.nextInt(256)
+        )
     }
 }

@@ -5,24 +5,40 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.BackupTable
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.InsertChartOutlined
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
@@ -48,14 +64,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.equationl.wxsteplog.model.StaticsScreenModel
 import com.equationl.wxsteplog.ui.LocalNavController
+import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsFilter
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowRange
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowType
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsState
 import com.equationl.wxsteplog.ui.view.statistics.viewmodel.StatisticsViewModel
 import com.equationl.wxsteplog.ui.widget.DateTimeRangePickerDialog
+import com.equationl.wxsteplog.ui.widget.LineSeriesChart
+import com.equationl.wxsteplog.ui.widget.ListEmptyContent
 import com.equationl.wxsteplog.ui.widget.LoadingContent
 import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
 import kotlinx.coroutines.Dispatchers
@@ -148,7 +170,7 @@ fun StatisticsScreen(viewModel: StatisticsViewModel = hiltViewModel()) {
                 LoadingContent()
             }
             else {
-                HomeContent(state)
+                HomeContent(state, viewModel::onChangeFilter)
             }
         }
     }
@@ -275,25 +297,94 @@ private fun TopBarMoreFunction(
 @Composable
 private fun HomeContent(
     state: StatisticsState,
+    onChangeFilter: (newFilter: StatisticsFilter) -> Unit
 ) {
     when (state.showType) {
-        StatisticsShowType.List -> ListContent(state)
+        StatisticsShowType.List -> ListContent(state, onChangeFilter)
         StatisticsShowType.Chart -> ChartContent(state)
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ListContent(
     state: StatisticsState,
+    onChangeFilter: (newFilter: StatisticsFilter) -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+    val dataList = state.dataList
+    if (dataList.isEmpty()) {
+        ListEmptyContent("还没有数据哦~\n可以试试修改筛选条件哦")
+    }
+    else {
+        Column(
+            Modifier
+                .fillMaxSize()
+        ) {
+            LazyColumn(
+                state = state.listState
+            ) {
+                item(key = "headerFilter") {
+                    HeaderFilter(state, onChangeFilter = onChangeFilter)
+                }
+
+                var lastTitle = ""
+
+                dataList.forEach { item ->
+                    if (item.headerTitle != lastTitle) {
+                        stickyHeader {
+                            TodoListGroupHeader(leftText = item.headerTitle, rightText = "")
+                        }
+                        lastTitle = item.headerTitle
+                    }
+                    item(key = item.id) {
+                        ListItem(item)
+                    }
+
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HeaderFilter(
+    state: StatisticsState,
+    onChangeFilter: (newFilter: StatisticsFilter) -> Unit
+) {
+    Row(
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp)
     ) {
-        Text("TODO……")
+        Checkbox(
+            checked = state.filter.isFoldData,
+            onCheckedChange = {
+                onChangeFilter(
+                    state.filter.copy(isFoldData = it)
+                )
+            }
+        )
+        Text("折叠相同数据")
     }
 
+    Spacer(modifier = Modifier.height(16.dp))
+}
+
+@Composable
+private fun TodoListGroupHeader(leftText: String, rightText: String = "") {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 12.dp)
+    ) {
+        Text(text = leftText)
+        Text(text = rightText)
+    }
 }
 
 @Composable
@@ -301,10 +392,81 @@ private fun ChartContent(
     state: StatisticsState,
 ) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("TODO……")
+        for (userChartData in state.chartData) {
+            Text(userChartData.key, style = MaterialTheme.typography.labelSmall)
+            Spacer(modifier = Modifier.height(8.dp))
+            LineSeriesChart(userChartData.value, state.chartXLabelData)
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun ListItem(
+    item: StaticsScreenModel,
+    onClickCard: (() -> Unit)? = null
+) {
+    if (onClickCard == null) {
+        Card(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            ListCardContent(item = item)
+        }
+    }
+    else {
+        Card(
+            onClick = onClickCard,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            ListCardContent(item = item)
+        }
+    }
+}
+
+@Composable
+private fun ListCardContent(
+    item: StaticsScreenModel
+) {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .padding(8.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxHeight(),
+                verticalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Text(text = item.logTimeString, style = MaterialTheme.typography.bodyMedium)
+                Text(text = item.userName, style = MaterialTheme.typography.bodyMedium)
+            }
+
+            Column(
+                modifier = Modifier.fillMaxHeight(),
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.End
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(text = item.likeNum.toString(), style = MaterialTheme.typography.bodySmall)
+                    Icon(
+                        Icons.Filled.Favorite,
+                        contentDescription = "like",
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                Text(text = item.stepNum.toString(), style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold))
+            }
+        }
     }
 }

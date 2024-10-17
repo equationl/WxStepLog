@@ -1,5 +1,6 @@
 package com.equationl.wxsteplog.ui.widget
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,5 +22,16 @@ fun LoadingContent(
     ) {
         CircularProgressIndicator()
         Text(text = msg)
+    }
+}
+
+@Composable
+fun ListEmptyContent(msg: String, onClick: (() -> Unit)? = null) {
+    Column(
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Text(text = msg, modifier = Modifier.clickable { onClick?.invoke() })
     }
 }

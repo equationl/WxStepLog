@@ -15,7 +15,7 @@ navigation = "2.8.2"
 hiltPlugin = "2.50"
 hiltNavigationCompose = "1.2.0"
 dagger = "2.51.1"
-
+vico = "2.0.0-beta.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -44,6 +44,8 @@ androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-com
 dagger-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
 hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "dagger" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "dagger" }
+vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }
+vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
 
 
 [plugins]

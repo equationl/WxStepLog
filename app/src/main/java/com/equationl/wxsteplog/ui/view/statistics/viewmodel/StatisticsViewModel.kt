@@ -10,10 +10,13 @@ import androidx.lifecycle.viewModelScope
 import com.equationl.wxsteplog.db.WxStepDB
 import com.equationl.wxsteplog.db.WxStepTable
 import com.equationl.wxsteplog.model.StaticsScreenModel
+import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsChartData
+import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsFilter
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowRange
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowType
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsState
 import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
+import com.equationl.wxsteplog.util.DateTimeUtil.toTimestamp
 import com.equationl.wxsteplog.util.ResolveDataUtil
 import com.equationl.wxsteplog.util.Utils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -39,7 +42,6 @@ class StatisticsViewModel @Inject constructor(
     val uiState = _uiState.asStateFlow()
 
     fun init() {
-        // TODO
         viewModelScope.launch {
             loadData()
         }
@@ -105,39 +107,55 @@ class StatisticsViewModel @Inject constructor(
         }
     }
 
+    fun onChangeFilter(newFilter: StatisticsFilter) {
+        _uiState.update { it.copy(filter = newFilter) }
+
+        viewModelScope.launch {
+            loadData()
+        }
+    }
+
     private suspend fun loadData() = withContext(Dispatchers.IO) {
-        // TODO
         _uiState.update { it.copy(isLoading = true) }
 
         val rawDataList = db.manHoursDB().queryRangeDataList(_uiState.value.showRange.start, _uiState.value.showRange.end, 1, Int.MAX_VALUE)
-        val resolveResult = resolveData(rawDataList, _uiState.value.isFoldData)
+        val resolveResult = resolveData(rawDataList, _uiState.value.filter)
 
-        val charList = listOf<Any>()
+        val charList = mutableMapOf<String, MutableList<StatisticsChartData>>()
+        val chartXLabelList = mutableMapOf<Number, String>()
         if (_uiState.value.showType == StatisticsShowType.Chart) {
-//            for (item in resolveResult) {
-//                val newBar = BarChartData.Bar(
-//                    label = "${item.startTime.formatDateTime("yyyy-MM")}(${item.totalTime.formatTime()})",
-//                    value = (item.totalTime / DateTimeUtil.HOUR_MILL_SECOND_TIME).toFloat(),
-//                    color = Utils.randomColor
-//                )
-//                barChartDataList.add(newBar)
-//            }
+            for (item in resolveResult) {
+                val currentData = charList[item.userName] ?: mutableListOf()
+                var lineData = currentData.find { it.label == item.headerTitle }
+                if (lineData == null) {
+                    lineData = StatisticsChartData(
+                        mutableListOf(),
+                        mutableListOf(),
+                        item.headerTitle,
+                        Utils.getRandomColor(item.headerTitle.toTimestamp("yyyy-MM-dd")),
+                    )
+                    currentData.add(lineData)
+                }
+                val xValue = item.logTime.formatDateTime("HHmm").toInt()
+                lineData.x.add(xValue)
+                lineData.y.add(item.stepNum)
+                chartXLabelList[xValue] = item.logTime.formatDateTime("HH:mm")
+
+                charList[item.userName] = currentData
+            }
         }
 
         _uiState.update {
             it.copy(
                 isLoading = false,
                 dataList = resolveResult,
-                chartData = charList
+                chartData = charList,
+                chartXLabelData = chartXLabelList
             )
         }
-
     }
 
-    private fun resolveData(rawDataList: List<WxStepTable>, isFoldData: Boolean): List<StaticsScreenModel> {
-        return ResolveDataUtil.rawDataToStaticsModel(isFoldData, rawDataList)
+    private fun resolveData(rawDataList: List<WxStepTable>, filter: StatisticsFilter): List<StaticsScreenModel> {
+        return ResolveDataUtil.rawDataToStaticsModel(rawDataList, filter.isFoldData, filter.user)
     }
-
-
-
 }

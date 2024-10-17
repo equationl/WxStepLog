@@ -71,6 +71,8 @@ dependencies {
 
     implementation(libs.gson)
     implementation(libs.hilt.android)
+    implementation(libs.vico.compose)
+    implementation(libs.vico.compose.m3)
 
     ksp(libs.androidx.room.compiler)
     ksp(libs.dagger.compiler)

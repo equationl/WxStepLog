@@ -6,5 +6,6 @@ data class StaticsScreenModel(
     val logTimeString: String,
     val stepNum: Int,
     val likeNum: Int,
-    val headerTitle: String
+    val headerTitle: String,
+    val userName: String,
 )
