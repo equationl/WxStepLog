@@ -3,6 +3,8 @@ package com.equationl.wxsteplog.util
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.os.Build
+import android.text.SpannableStringBuilder
 import android.util.Log
 import androidx.compose.ui.graphics.Color
 import kotlin.random.Random
@@ -31,4 +33,17 @@ object Utils {
             random.nextInt(256)
         )
     }
+
+    fun SpannableStringBuilder.appendCompat(
+        text: CharSequence,
+        what: Any,
+        flags: Int,
+    ): SpannableStringBuilder =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            append(text, what, flags)
+        } else {
+            append(text, 0, text.length)
+            setSpan(what, length - text.length, length, flags)
+            this
+        }
 }

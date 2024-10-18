@@ -12,6 +12,15 @@ object DateTimeUtil {
     const val MINUTE_MILL_SECOND_TIME = 60_000L
     const val SECOND_MILL_SECOND_TIME = 1_000L
 
+    private val timeWithHalfHours = listOf(
+        "00:00", "00:30", "01:00", "01:30", "02:00", "02:30", "03:00", "03:30", "04:00",
+        "04:30", "05:00", "05:30", "06:00", "06:30", "07:00", "07:30", "08:00", "08:30",
+        "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00",
+        "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30",
+        "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30", "22:00",
+        "22:30", "23:00", "23:30", "24:00"
+    )
+
     fun Long.formatDateTime(format: String = "yyyy-MM-dd HH:mm:ss"): String {
         val sDateFormat = SimpleDateFormat(format, Locale.getDefault())
         return sDateFormat.format(Date(this))
@@ -35,6 +44,18 @@ object DateTimeUtil {
         val start = getWeeOfToday()
         val end = start + DAY_MILL_SECOND_TIME
         return StatisticsShowRange(start, end)
+    }
+
+    fun getTimeFromSecond(millisecond: Int): String {
+        val minutes = millisecond / 60
+        val hoursValue = minutes / 60
+        val minutesValue = minutes % 60
+
+        return "${hoursValue.toString().padStart(2, '0')}:${minutesValue.toString().padStart(2, '0')}"
+    }
+
+    fun getTimeFromHalfHourIndex(index: Int): String {
+        return timeWithHalfHours[index]
     }
 
 }

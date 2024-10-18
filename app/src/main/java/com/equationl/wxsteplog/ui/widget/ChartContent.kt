@@ -1,7 +1,9 @@
 package com.equationl.wxsteplog.ui.widget
 
 import android.text.Layout
-import android.util.Log
+import android.text.Spannable
+import android.text.SpannableStringBuilder
+import android.text.style.ForegroundColorSpan
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -9,6 +11,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsChartData
+import com.equationl.wxsteplog.util.DateTimeUtil
+import com.equationl.wxsteplog.util.Utils.appendCompat
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisGuidelineComponent
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
@@ -43,6 +47,7 @@ import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.cartesian.marker.CartesianMarker
 import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
+import com.patrykandpatrick.vico.core.cartesian.marker.LineCartesianLayerMarkerTarget
 import com.patrykandpatrick.vico.core.common.Insets
 import com.patrykandpatrick.vico.core.common.LayeredComponent
 import com.patrykandpatrick.vico.core.common.Legend
@@ -59,7 +64,7 @@ import kotlinx.coroutines.withContext
 fun LineSeriesChart(
     dataList: List<StatisticsChartData>
 ) {
-    Log.i("el", "LineSeriesChart: $dataList")
+    // Log.i("el", "LineSeriesChart: $dataList")
     val modelProducer = remember { CartesianChartModelProducer() }
     LaunchedEffect(Unit) {
         withContext(Dispatchers.Default) {
@@ -103,17 +108,13 @@ fun LineSeriesChart(
             ),
             // X 轴
             bottomAxis = HorizontalAxis.rememberBottom(
-                //TODO 这里需要改成只显示关键坐标，不需要连续显示
-                // 好像不支持这样做，那只能缩短间隔，以半小时为间隔来显示了， 而不是现在的以分钟为间隔
                 itemPlacer = HorizontalAxis.ItemPlacer.segmented(),
                 valueFormatter =  { _, x, _ ->
-                    // TODO 格式化成日期
-                    x.toString()
-                    //xLabel[x.toInt()] ?: x.toString()
+                    DateTimeUtil.getTimeFromHalfHourIndex(x.toInt())
                 },
                 labelRotationDegrees = 90f,
             ),
-            marker = rememberMarker(),
+            marker = rememberMarker(dataList.size),
             layerPadding = cartesianLayerPadding(scalableStartPadding = 16.dp, scalableEndPadding = 16.dp),
             legend = rememberLegend(dataList),
         ),
@@ -146,8 +147,14 @@ private fun rememberLegend(dataList: List<StatisticsChartData>): Legend<Cartesia
     )
 }
 
+/**
+ * @param lineCount 标签文本有几行
+ * @param labelPosition 显示的标签方向
+ * @param showIndicator 是否显示点击位置的圆点指示
+ * */
 @Composable
 internal fun rememberMarker(
+    lineCount: Int,
     labelPosition: DefaultCartesianMarker.LabelPosition = DefaultCartesianMarker.LabelPosition.Top,
     showIndicator: Boolean = true,
 ): CartesianMarker {
@@ -166,6 +173,7 @@ internal fun rememberMarker(
             padding = dimensions(8.dp, 4.dp),
             background = labelBackground,
             minWidth = TextComponent.MinWidth.fixed(40.dp),
+            lineCount = lineCount
         )
     val indicatorFrontComponent =
         rememberShapeComponent(MaterialTheme.colorScheme.surface, CorneredShape.Pill)
@@ -212,6 +220,22 @@ internal fun rememberMarker(
                 },
                 indicatorSizeDp = 36f,
                 guideline = guideline,
+                valueFormatter = { _, targets ->
+                    SpannableStringBuilder().apply {
+                        for (target in targets) {
+                            val data = (target as LineCartesianLayerMarkerTarget)
+                            data.points.forEachIndexed { index, point ->
+                                val text = "${DateTimeUtil.getTimeFromHalfHourIndex(point.entry.x.toInt())}: ${point.entry.y.toInt()}"
+                                appendCompat(
+                                    text,
+                                    ForegroundColorSpan(point.color),
+                                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
+                                )
+                                if (index != target.points.lastIndex) append("\n")
+                            }
+                        }
+                    }
+                }
             ) {
             override fun updateInsets(
                 context: CartesianMeasuringContext,

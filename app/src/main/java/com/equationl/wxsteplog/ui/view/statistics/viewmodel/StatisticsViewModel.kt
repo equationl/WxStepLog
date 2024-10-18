@@ -118,7 +118,14 @@ class StatisticsViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true) }
 
         val rawDataList = db.manHoursDB().queryRangeDataList(_uiState.value.showRange.start, _uiState.value.showRange.end, 1, Int.MAX_VALUE)
-        val resolveResult = resolveData(rawDataList, _uiState.value.filter)
+        var filter = _uiState.value.filter
+
+        // 统计图需要平滑数据，所以不能折叠
+        if (_uiState.value.showType == StatisticsShowType.Chart) {
+            filter = filter.copy(isFoldData = false)
+        }
+
+        val resolveResult = resolveData(rawDataList, filter)
 
         var charList = mapOf<String, List<StatisticsChartData>>()
         if (_uiState.value.showType == StatisticsShowType.Chart) {

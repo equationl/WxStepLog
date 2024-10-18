@@ -299,9 +299,15 @@ private fun HomeContent(
     state: StatisticsState,
     onChangeFilter: (newFilter: StatisticsFilter) -> Unit
 ) {
-    when (state.showType) {
-        StatisticsShowType.List -> ListContent(state, onChangeFilter)
-        StatisticsShowType.Chart -> ChartContent(state)
+
+    if (state.dataList.isEmpty()) {
+        ListEmptyContent("还没有数据哦~\n可以试试修改筛选条件哦")
+    }
+    else {
+        when (state.showType) {
+            StatisticsShowType.List -> ListContent(state, onChangeFilter)
+            StatisticsShowType.Chart -> ChartContent(state)
+        }
     }
 }
 
@@ -311,36 +317,30 @@ private fun ListContent(
     state: StatisticsState,
     onChangeFilter: (newFilter: StatisticsFilter) -> Unit
 ) {
-    val dataList = state.dataList
-    if (dataList.isEmpty()) {
-        ListEmptyContent("还没有数据哦~\n可以试试修改筛选条件哦")
-    }
-    else {
-        Column(
-            Modifier
-                .fillMaxSize()
+    Column(
+        Modifier
+            .fillMaxSize()
+    ) {
+        LazyColumn(
+            state = state.listState
         ) {
-            LazyColumn(
-                state = state.listState
-            ) {
-                item(key = "headerFilter") {
-                    HeaderFilter(state, onChangeFilter = onChangeFilter)
+            item(key = "headerFilter") {
+                HeaderFilter(state, onChangeFilter = onChangeFilter)
+            }
+
+            var lastTitle = ""
+
+            state.dataList.forEach { item ->
+                if (item.headerTitle != lastTitle) {
+                    stickyHeader {
+                        TodoListGroupHeader(leftText = item.headerTitle, rightText = "")
+                    }
+                    lastTitle = item.headerTitle
+                }
+                item(key = item.id) {
+                    ListItem(item)
                 }
 
-                var lastTitle = ""
-
-                dataList.forEach { item ->
-                    if (item.headerTitle != lastTitle) {
-                        stickyHeader {
-                            TodoListGroupHeader(leftText = item.headerTitle, rightText = "")
-                        }
-                        lastTitle = item.headerTitle
-                    }
-                    item(key = item.id) {
-                        ListItem(item)
-                    }
-
-                }
             }
         }
     }
