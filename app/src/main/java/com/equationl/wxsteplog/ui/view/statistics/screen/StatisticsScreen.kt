@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.BackupTable
 import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.ImportContacts
 import androidx.compose.material.icons.outlined.InsertChartOutlined
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.Card
@@ -80,7 +81,6 @@ import com.equationl.wxsteplog.ui.widget.LineSeriesChart
 import com.equationl.wxsteplog.ui.widget.ListEmptyContent
 import com.equationl.wxsteplog.ui.widget.LoadingContent
 import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -93,9 +93,13 @@ fun StatisticsScreen(viewModel: StatisticsViewModel = hiltViewModel()) {
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        scope.launch(Dispatchers.IO) {
-            viewModel.exportData(result, context)
-        }
+        viewModel.exportData(result, context)
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        viewModel.onImport(result, context)
     }
 
     val isListScroll by remember{
@@ -136,6 +140,10 @@ fun StatisticsScreen(viewModel: StatisticsViewModel = hiltViewModel()) {
                     val intent = viewModel.createNewDocumentIntent()
                     exportLauncher.launch(intent)
                 },
+                onImport = {
+                    val intent = viewModel.createReadDocumentIntent()
+                    importLauncher.launch(intent)
+                }
             )
         },
         floatingActionButton = {
@@ -187,6 +195,7 @@ private fun TopBar(
     onFilterDateRange: (value: StatisticsShowRange) -> Unit,
     onChangeShowType: () -> Unit,
     onExport: () -> Unit,
+    onImport: () -> Unit
 ) {
     val navController = LocalNavController.current
     var isShowDatePickedDialog by remember { mutableStateOf(false) }
@@ -259,6 +268,10 @@ private fun TopBar(
                     isExpandMenu = false
                     onExport()
                 },
+                onClickImport = {
+                    isExpandMenu = false
+                    onImport()
+                }
             )
         }
     )
@@ -279,15 +292,25 @@ private fun TopBarMoreFunction(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
     onClickExport: () -> Unit,
+    onClickImport: () -> Unit
 ) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismissRequest) {
         DropdownMenuItem(
             text = {
-                Text(text = "Export Data To .csv")
+                Text(text = "导出数据为 .csv 文件")
             },
             onClick = onClickExport,
             leadingIcon = {
                 Icon(imageVector = Icons.Outlined.BackupTable, contentDescription = "export")
+            }
+        )
+        DropdownMenuItem(
+            text = {
+                Text(text = "通过 .csv 文件导入数据")
+            },
+            onClick = onClickImport,
+            leadingIcon = {
+                Icon(imageVector = Icons.Outlined.ImportContacts, contentDescription = "import")
             }
         )
     }

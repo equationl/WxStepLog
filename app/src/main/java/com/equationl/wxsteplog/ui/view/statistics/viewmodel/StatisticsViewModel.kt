@@ -88,20 +88,59 @@ class StatisticsViewModel @Inject constructor(
         return intent
     }
 
-    suspend fun exportData(result: ActivityResult, context: Context) {
+    fun createReadDocumentIntent(): Intent {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "text/comma-separated-values"
+
+            // putExtra(DocumentsContract.EXTRA_INITIAL_URI, pickerInitialUri)
+        }
+        return intent
+    }
+
+    fun exportData(result: ActivityResult, context: Context) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val data = result.data
+            val uri = data?.data
+            uri?.let {
+                context.contentResolver.openOutputStream(it)?.let { outputStream ->
+                    val dataList = db.manHoursDB().queryAllData()
+                    for (row in dataList) {
+                        outputStream.write("${row.id},${row.userName},${row.stepNum},${row.likeNum},${row.logTimeString},${row.logTime}\n".toByteArray())
+                    }
+                    outputStream.flush()
+                    outputStream.close()
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "导出完成！", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
+
+    fun onImport(result: ActivityResult, context: Context) {
         val data = result.data
         val uri = data?.data
+
+        var hasConflict = false
+
         uri?.let {
-            context.contentResolver.openOutputStream(it)?.let { outputStream ->
-                val dataList = db.manHoursDB().queryAllData()
-                for (row in dataList) {
-                    outputStream.write("${row.id},${row.userName},${row.stepNum},${row.likeNum},${row.logTimeString},${row.logTime}\n".toByteArray())
+            viewModelScope.launch(Dispatchers.IO) {
+                val buffer = context.contentResolver.openInputStream(it)?.bufferedReader()
+                buffer?.useLines {
+                    hasConflict = ResolveDataUtil.importDataFromCsv(it, db)
                 }
-                outputStream.flush()
-                outputStream.close()
+
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "导出完成！", Toast.LENGTH_SHORT).show()
+                    if (hasConflict) {
+                        Toast.makeText(context, "导入完成，但是部分数据由于某些错误没有导入", Toast.LENGTH_LONG).show()
+                    }
+                    else {
+                        Toast.makeText(context, "导入成功", Toast.LENGTH_SHORT).show()
+                    }
                 }
+
+                loadData()
             }
         }
     }

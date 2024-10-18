@@ -1,5 +1,7 @@
 package com.equationl.wxsteplog.util
 
+import android.util.Log
+import com.equationl.wxsteplog.db.WxStepDB
 import com.equationl.wxsteplog.db.WxStepTable
 import com.equationl.wxsteplog.model.StaticsScreenModel
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsChartData
@@ -7,6 +9,8 @@ import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
 import com.equationl.wxsteplog.util.DateTimeUtil.toTimestamp
 
 object ResolveDataUtil {
+    private const val TAG = "ResolveDataUtil"
+
     fun rawDataToStaticsModel(
         rawDataList: List<WxStepTable>,
         isFoldData: Boolean,
@@ -80,20 +84,40 @@ object ResolveDataUtil {
         return charList
     }
 
-    // TODO 增加导入数据
-    fun importDataFromCsv(csvData: String): List<WxStepTable> {
-        val result = mutableListOf<WxStepTable>()
+    suspend fun importDataFromCsv(
+        csvLines: Sequence<String>,
+        db: WxStepDB
+    ): Boolean {
+        var hasConflict = false
 
-        for (line in csvData.lines()) {
-            if (line.isBlank()) continue
+        for (line in csvLines) {
+            if (line.isBlank()) {
+                Log.w(TAG, "importDataFromCsv: line is blank!")
+                continue
+            }
+
             val itemList = line.split(",")
-            if (itemList.size !=  6) continue
-            result.add(
-                WxStepTable(userName = itemList[1], stepNum = itemList[2].toIntOrNull(), likeNum = itemList[3].toIntOrNull(), logTime = itemList[5].toLongOrNull() ?: 0, logTimeString = itemList[4])
-            )
+
+            if (itemList.size !=  6) {
+                Log.w(TAG, "importDataFromCsv: line data size not right: $itemList")
+                hasConflict = true
+                continue
+            }
+
+            try {
+                val wxStepTable = WxStepTable(userName = itemList[1], stepNum = itemList[2].toIntOrNull(), likeNum = itemList[3].toIntOrNull(), logTime = itemList[5].toLongOrNull() ?: 0, logTimeString = itemList[4])
+                val insertResult = db.manHoursDB().insertData(wxStepTable)
+                if (insertResult <= 0) {
+                    hasConflict = true
+                    Log.w(TAG, "importDataFromCsv: insert Data fail, return $insertResult, with data: $wxStepTable")
+                }
+            } catch (tr: Throwable) {
+                Log.e(TAG, "importDataFromCsv: ", tr)
+                hasConflict = true
+            }
         }
 
-        return result
+        return hasConflict
     }
 
     private fun getXValueIndex(timeStamp: Long): Int {

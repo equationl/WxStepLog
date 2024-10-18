@@ -1,6 +1,7 @@
 package com.equationl.wxsteplog.db
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -9,13 +10,10 @@ import androidx.room.RoomDatabase
     entities = [
         WxStepTable::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
     autoMigrations = [
-//        AutoMigration(from = 1, to = 2),
-//        AutoMigration(from = 2, to = 3),
-//        AutoMigration(from = 3, to = 4),
-//        AutoMigration(from = 4, to = 5)
+        AutoMigration(from = 1, to = 2)
     ]
 )
 //@TypeConverters(DBConverters::class)
