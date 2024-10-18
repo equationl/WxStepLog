@@ -24,7 +24,7 @@ data class StatisticsShowRange(
 data class StatisticsFilter(
      /** 是否折叠未改变的数据 */
     val isFoldData: Boolean = true,
-     /** 筛选指定用户， null 表示不筛选*/
+     /** TODO 筛选指定用户， null 表示不筛选*/
     val user: String? = null,
 )
 

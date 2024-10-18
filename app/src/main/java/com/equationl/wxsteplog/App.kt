@@ -1,6 +1,7 @@
 package com.equationl.wxsteplog
 
 import android.app.Application
+import com.equationl.wxsteplog.util.datastore.DataStoreUtils
 import com.equationl.wxsteplog.util.log.LogUtil
 import dagger.hilt.android.HiltAndroidApp
 
@@ -15,6 +16,7 @@ class App: Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        DataStoreUtils.init(this)
         LogUtil.init(this, isLog = true)
     }
 }

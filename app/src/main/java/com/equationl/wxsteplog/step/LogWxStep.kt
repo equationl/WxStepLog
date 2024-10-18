@@ -21,12 +21,13 @@ class LogWxStep : StepImpl() {
         private const val TARGET_PACKAGE_NAME = "com.tencent.mm"
         private const val TAG = "LogWxStep"
         private const val SIMILARITY_THRESHOLD = 50
-        private const val LOG_INTERVAL_TIME = 1000L * 60
-        private const val LOG_INTERVAL_TIME_RANDOM_RANGE = 1000L * 30
+        var LOG_INTERVAL_TIME = 1000L * 60
+        var LOG_INTERVAL_TIME_RANDOM_RANGE = 1000L * 30
     }
 
     override fun onImpl(collector: StepCollector) {
         collector.next(StepTag.STEP_1) {
+            OverManager.log("当前参数：查找用户名【${it.data}】；间隔时间【$LOG_INTERVAL_TIME】；随机间隔【$LOG_INTERVAL_TIME_RANDOM_RANGE】")
             OverManager.log("启动微信")
             Intent().apply {
                 addCategory(Intent.CATEGORY_LAUNCHER)
