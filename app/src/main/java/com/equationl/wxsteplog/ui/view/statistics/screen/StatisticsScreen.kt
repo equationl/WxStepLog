@@ -3,10 +3,12 @@ package com.equationl.wxsteplog.ui.view.statistics.screen
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.BackupTable
@@ -63,6 +66,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -375,24 +380,96 @@ private fun HeaderFilter(
     onChangeFilter: (newFilter: StatisticsFilter) -> Unit
 ) {
     Row(
-        horizontalArrangement = Arrangement.End,
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp)
     ) {
-        Checkbox(
-            checked = state.filter.isFoldData,
-            onCheckedChange = {
-                onChangeFilter(
-                    state.filter.copy(isFoldData = it)
-                )
-            }
-        )
-        Text("折叠相同数据")
+        FilterUser(state, onChangeFilter)
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = state.filter.isFoldData,
+                onCheckedChange = {
+                    onChangeFilter(
+                        state.filter.copy(isFoldData = it)
+                    )
+                }
+            )
+            Text("折叠相同数据")
+        }
     }
 
     Spacer(modifier = Modifier.height(16.dp))
+}
+
+@Composable
+private fun FilterUser(state: StatisticsState, onChangeFilter: (newFilter: StatisticsFilter) -> Unit) {
+    var isShowUserDropMenu by remember { mutableStateOf(false) }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.clickable {
+            isShowUserDropMenu = !isShowUserDropMenu
+        }
+    ) {
+        val arrowRotateDegrees: Float by animateFloatAsState(
+            if (isShowUserDropMenu) -180f else 0f,
+            label = "arrowRotateDegrees"
+        )
+        Text(
+            state.filter.user  ?: "筛选用户",
+            color = if (state.filter.user != null) MaterialTheme.colorScheme.primary else Color.Unspecified
+        )
+        Icon(
+            Icons.Filled.ArrowDropDown,
+            contentDescription = "筛选用户",
+            modifier = Modifier.rotate(arrowRotateDegrees)
+        )
+        UserDropMenu(
+            isShow = isShowUserDropMenu,
+            state = state,
+            changeShowState = {
+                isShowUserDropMenu = it
+            },
+            onChangeFilter = onChangeFilter
+        )
+    }
+}
+
+@Composable
+private fun UserDropMenu(
+    isShow: Boolean,
+    state: StatisticsState,
+    changeShowState: (isShow: Boolean) -> Unit,
+    onChangeFilter: (newFilter: StatisticsFilter) -> Unit
+) {
+    val options = mutableListOf<String>()
+    options.add("不筛选")
+    options.addAll(state.userNameList)
+
+    DropdownMenu(
+        expanded = isShow,
+        onDismissRequest = {
+            changeShowState(false)
+        }
+    ) {
+        options.forEachIndexed  { index, item ->
+            DropdownMenuItem(
+                text = {
+                    Text(text = item)
+                },
+                onClick = {
+                    onChangeFilter(
+                        state.filter.copy(user = if (index == 0) null else item)
+                    )
+                },
+            )
+        }
+    }
 }
 
 @Composable
@@ -415,7 +492,9 @@ private fun ChartContent(
     state: StatisticsState,
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

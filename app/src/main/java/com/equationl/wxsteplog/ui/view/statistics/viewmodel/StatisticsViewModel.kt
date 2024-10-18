@@ -156,6 +156,7 @@ class StatisticsViewModel @Inject constructor(
     private suspend fun loadData() = withContext(Dispatchers.IO) {
         _uiState.update { it.copy(isLoading = true) }
 
+        val userList = db.manHoursDB().getCurrentUserList()
         val rawDataList = db.manHoursDB().queryRangeDataList(_uiState.value.showRange.start, _uiState.value.showRange.end, 1, Int.MAX_VALUE)
         var filter = _uiState.value.filter
 
@@ -176,6 +177,7 @@ class StatisticsViewModel @Inject constructor(
                 isLoading = false,
                 dataList = resolveResult,
                 chartData = charList,
+                userNameList = userList
             )
         }
     }

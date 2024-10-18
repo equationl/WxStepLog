@@ -13,7 +13,8 @@ data class StatisticsState(
     val showRange: StatisticsShowRange = DateTimeUtil.getCurrentDayRange(), // 默认今天
     val showType: StatisticsShowType = StatisticsShowType.List,
     val listState: LazyListState = LazyListState(),
-    val filter: StatisticsFilter = StatisticsFilter()
+    val filter: StatisticsFilter = StatisticsFilter(),
+    val userNameList: List<String> = listOf()
 )
 
 data class StatisticsShowRange(
@@ -24,7 +25,7 @@ data class StatisticsShowRange(
 data class StatisticsFilter(
      /** 是否折叠未改变的数据 */
     val isFoldData: Boolean = true,
-     /** TODO 筛选指定用户， null 表示不筛选*/
+     /** 筛选指定用户， null 表示不筛选*/
     val user: String? = null,
 )
 
