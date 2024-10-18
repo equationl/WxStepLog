@@ -4,10 +4,23 @@ import android.text.Layout
 import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.text.style.ForegroundColorSpan
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ZoomIn
+import androidx.compose.material.icons.outlined.ZoomOut
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsChartData
@@ -65,6 +78,7 @@ fun LineSeriesChart(
     dataList: List<StatisticsChartData>
 ) {
     // Log.i("el", "LineSeriesChart: $dataList")
+    var chartHeight by remember { mutableFloatStateOf(200f) }
     val modelProducer = remember { CartesianChartModelProducer() }
     LaunchedEffect(Unit) {
         withContext(Dispatchers.Default) {
@@ -81,8 +95,27 @@ fun LineSeriesChart(
         }
     }
 
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.End
+    ) {
+        IconButton(
+            onClick = {
+                chartHeight -= 50f
+            },
+            enabled = chartHeight > 200f
+        ) {
+            Icon(Icons.Outlined.ZoomOut, "zoom out")
+        }
+        IconButton(onClick = {
+            chartHeight += 50f
+        }) {
+            Icon(Icons.Outlined.ZoomIn, "zoom in")
+        }
+    }
 
     CartesianChartHost(
+        modifier = Modifier.height(chartHeight.dp),
         chart =
         rememberCartesianChart(
             // 线条样式
