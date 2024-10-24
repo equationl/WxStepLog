@@ -7,6 +7,7 @@ import com.equationl.wxsteplog.model.StaticsScreenModel
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsChartData
 import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
 import com.equationl.wxsteplog.util.DateTimeUtil.toTimestamp
+import com.equationl.wxsteplog.util.DateTimeUtil.toWeekday
 
 object ResolveDataUtil {
     private const val TAG = "ResolveDataUtil"
@@ -51,19 +52,18 @@ object ResolveDataUtil {
         val charList = mutableMapOf<String, MutableList<StatisticsChartData>>()
         for (item in resolveResult) {
             val currentData = charList[item.userName] ?: mutableListOf()
-            var lineData = currentData.find { it.label == item.headerTitle }
+            var lineData = currentData.find { it.label.split(" ").first() == item.headerTitle }
             if (lineData == null) {
                 lineData = StatisticsChartData(
                     MutableList(49) { index: Int -> index },
                     MutableList(49) { _ -> 0 },
-                    item.headerTitle,
+                    "${item.headerTitle} ${item.logTime.toWeekday()}",
                     Utils.getRandomColor(item.headerTitle.toTimestamp("yyyy-MM-dd")),
                 )
                 currentData.add(lineData)
             }
 
-            //  TODO 这里返回的是时间戳，所以需要按时区偏移一下，比如 GMT + 8
-            val onlyTimeStamp = item.logTime.formatDateTime("HHmm").toTimestamp("HHmm") + 8 * DateTimeUtil.HOUR_MILL_SECOND_TIME
+            val onlyTimeStamp = item.logTime.formatDateTime("HHmm").toTimestamp("HHmm", isWithoutTimeZone = true)
             // Log.i("el", "resolveChartData: onlyTimeStamp = $onlyTimeStamp, logTime = ${item.logTime}, fromat = ${item.logTime.formatDateTime("HHmm")}, step = ${item.stepNum}")
             val index = getXValueIndex(onlyTimeStamp)
             lineData.x[index] = index

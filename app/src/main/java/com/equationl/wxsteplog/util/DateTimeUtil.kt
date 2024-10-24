@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 object DateTimeUtil {
     const val DAY_MILL_SECOND_TIME = 86400_000L
@@ -21,13 +22,34 @@ object DateTimeUtil {
         "22:30", "23:00", "23:30", "24:00"
     )
 
-    fun Long.formatDateTime(format: String = "yyyy-MM-dd HH:mm:ss"): String {
-        val sDateFormat = SimpleDateFormat(format, Locale.getDefault())
+    fun Long.formatDateTime(format: String = "yyyy-MM-dd HH:mm:ss", local: Locale = Locale.getDefault()): String {
+        val sDateFormat = SimpleDateFormat(format, local)
         return sDateFormat.format(Date(this))
     }
 
-    fun String.toTimestamp(format: String = "yyyy-MM-dd HH:mm:ss"): Long {
-        val date = SimpleDateFormat(format, Locale.getDefault()).parse(this)
+    fun Long.toWeekday(): String {
+        val calendar = Calendar.getInstance()
+        calendar.timeInMillis = this
+
+        val weekdayNumber = calendar.get(Calendar.DAY_OF_WEEK)
+        return when (weekdayNumber) {
+            Calendar.SUNDAY -> "星期日"
+            Calendar.MONDAY -> "星期一"
+            Calendar.TUESDAY -> "星期二"
+            Calendar.WEDNESDAY -> "星期三"
+            Calendar.THURSDAY -> "星期四"
+            Calendar.FRIDAY -> "星期五"
+            Calendar.SATURDAY -> "星期六"
+            else -> "未知"
+        }
+    }
+
+    fun String.toTimestamp(format: String = "yyyy-MM-dd HH:mm:ss", local: Locale = Locale.getDefault(), isWithoutTimeZone: Boolean = false): Long {
+        val sdf = SimpleDateFormat(format, local)
+        if (isWithoutTimeZone) {
+            sdf.timeZone = TimeZone.getTimeZone("UTC")
+        }
+        val date = sdf.parse(this)
         return (date?.time ?: 0L).coerceAtLeast(0)
     }
 

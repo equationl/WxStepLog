@@ -57,8 +57,6 @@ fun DateTimeRangePickerDialog(
                         //endMillis -= 1
                     }
 
-
-                    // FIXME 返回的数据被 +8 了，看一下是不是时区设置错了
                     Log.i("el", "DateTimeRangePickerDialog: start = $startMillis, end = $endMillis")
                     onFilterDate(StatisticsShowRange(startMillis, endMillis))
                 }

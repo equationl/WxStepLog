@@ -3,6 +3,7 @@ package com.equationl.wxsteplog.ui.view.statistics.viewmodel
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.icu.util.TimeZone
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.lifecycle.ViewModel
@@ -157,7 +158,9 @@ class StatisticsViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true) }
 
         val userList = db.manHoursDB().getCurrentUserList()
-        val rawDataList = db.manHoursDB().queryRangeDataList(_uiState.value.showRange.start, _uiState.value.showRange.end, 1, Int.MAX_VALUE)
+        // 需要按时区偏移一下
+        val offset = TimeZone.getDefault().rawOffset
+        val rawDataList = db.manHoursDB().queryRangeDataList(_uiState.value.showRange.start - offset, _uiState.value.showRange.end - offset, 1, Int.MAX_VALUE)
         var filter = _uiState.value.filter
 
         // 统计图需要平滑数据，所以不能折叠
