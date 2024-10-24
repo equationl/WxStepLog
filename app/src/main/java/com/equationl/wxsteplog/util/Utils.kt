@@ -7,6 +7,7 @@ import android.os.Build
 import android.text.SpannableStringBuilder
 import android.util.Log
 import androidx.compose.ui.graphics.Color
+import com.equationl.wxsteplog.model.WxStepLogSetting
 import kotlin.random.Random
 
 object Utils {
@@ -46,4 +47,10 @@ object Utils {
             setSpan(what, length - text.length, length, flags)
             this
         }
+
+    fun getIntervalTime(setting: WxStepLogSetting): Long {
+        val difference = if (setting.isRandomInterval) (0..setting.randomIntervalValue).random() else 0
+        val flag = listOf(-1, 1).random()
+        return setting.intervalTime + difference * flag
+    }
 }

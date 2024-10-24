@@ -1,5 +1,9 @@
 package com.equationl.wxsteplog.model
 
 data class WxStepLogSetting(
-    val userName: String
+    val userNameList: List<String>,
+    val logUserMode: LogUserMode,
+    val intervalTime: Long,
+    val isRandomInterval: Boolean,
+    val randomIntervalValue: Long,
 )

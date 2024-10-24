@@ -11,6 +11,7 @@ import com.blankj.utilcode.util.TimeUtils
 import com.equationl.wxsteplog.App
 import com.equationl.wxsteplog.R
 import com.equationl.wxsteplog.databinding.ViewMainOverBinding
+import com.equationl.wxsteplog.model.LogUserMode
 import com.equationl.wxsteplog.model.WxStepLogSetting
 import com.equationl.wxsteplog.util.log.LogUtil
 import com.ven.assists.Assists
@@ -50,7 +51,16 @@ object OverManager : StepListener {
                     return@setOnClickListener
                 }
                 beginStart(this)
-                StepManager.execute(LogWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!.userName)
+
+                if (setting!!.logUserMode == LogUserMode.Multiple && setting!!.userNameList.size == 1) {
+                    StepManager.execute(LogWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!)
+                }
+                else {
+                    // TODO 这里还没有适配识别多个用户和全部识别的模式
+                    log("暂不支持多用户记录")
+                    return@setOnClickListener
+                    StepManager.execute(LogMultipleWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!)
+                }
             }
 
             btnStop.setOnClickListener {
