@@ -3,6 +3,7 @@ package com.equationl.wxsteplog.util
 import android.util.Log
 import com.equationl.wxsteplog.db.WxStepDB
 import com.equationl.wxsteplog.db.WxStepTable
+import com.equationl.wxsteplog.model.LogModel
 import com.equationl.wxsteplog.model.StaticsScreenModel
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsChartData
 import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
@@ -84,7 +85,6 @@ object ResolveDataUtil {
         return charList
     }
 
-    // TODO 导出排名数据
     suspend fun importDataFromCsv(
         csvLines: Sequence<String>,
         db: WxStepDB
@@ -99,14 +99,24 @@ object ResolveDataUtil {
 
             val itemList = line.split(",")
 
-            if (itemList.size !=  6) {
+            // 版本 1 导出数据只有 6 列
+            // 版本 2 导出数据增加了两列可空数据：当前排名、记录模式
+            if (itemList.size !=  6 && itemList.size != 8) {
                 Log.w(TAG, "importDataFromCsv: line data size not right: $itemList")
                 hasConflict = true
                 continue
             }
 
             try {
-                val wxStepTable = WxStepTable(userName = itemList[1], stepNum = itemList[2].toIntOrNull(), likeNum = itemList[3].toIntOrNull(), logTime = itemList[5].toLongOrNull() ?: 0, logTimeString = itemList[4], userOrder = null, logModel = null)
+                val wxStepTable = WxStepTable(
+                    userName = itemList[1],
+                    stepNum = itemList[2].toIntOrNull(),
+                    likeNum = itemList[3].toIntOrNull(),
+                    logTime = itemList[5].toLongOrNull() ?: 0,
+                    logTimeString = itemList[4],
+                    userOrder = itemList.getOrNull(6)?.toIntOrNull(),
+                    logModel = "${itemList.getOrNull(7) ?: ""},${LogModel.Import}"
+                )
                 val insertResult = db.manHoursDB().insertData(wxStepTable)
                 if (insertResult <= 0) {
                     hasConflict = true

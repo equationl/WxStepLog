@@ -11,7 +11,7 @@ import com.blankj.utilcode.util.TimeUtils
 import com.equationl.wxsteplog.App
 import com.equationl.wxsteplog.R
 import com.equationl.wxsteplog.databinding.ViewMainOverBinding
-import com.equationl.wxsteplog.model.LogUserMode
+import com.equationl.wxsteplog.model.LogSettingMode
 import com.equationl.wxsteplog.model.WxStepLogSetting
 import com.equationl.wxsteplog.util.log.LogUtil
 import com.ven.assists.Assists
@@ -52,7 +52,7 @@ object OverManager : StepListener {
                 }
                 beginStart(this)
 
-                if (setting!!.logUserMode == LogUserMode.Multiple && setting!!.userNameList.size == 1) {
+                if (setting!!.logUserMode == LogSettingMode.Multiple && setting!!.userNameList.size == 1) {
                     StepManager.execute(LogWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!)
                 }
                 else {

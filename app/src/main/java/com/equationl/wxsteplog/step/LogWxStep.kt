@@ -6,6 +6,7 @@ import android.content.Intent
 import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import com.equationl.wxsteplog.db.DbUtil
+import com.equationl.wxsteplog.model.LogModel
 import com.equationl.wxsteplog.model.WxStepLogSetting
 import com.equationl.wxsteplog.util.Utils
 import com.ven.assists.Assists
@@ -207,7 +208,7 @@ class LogWxStep : StepImpl() {
                 likeNum = dataList[1].text.toString().toIntOrNull(),
                 userName = setting.userNameList.first(),
                 userOrder = null,
-                logUserMode = setting.logUserMode
+                logUserMode = LogModel.Single
             )
             OverManager.log("数据记录完成，返回上一页")
             Assists.back()

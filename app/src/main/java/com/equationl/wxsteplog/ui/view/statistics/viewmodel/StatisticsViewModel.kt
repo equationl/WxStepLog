@@ -99,7 +99,6 @@ class StatisticsViewModel @Inject constructor(
         return intent
     }
 
-    // TODO 导入排名数据
     fun exportData(result: ActivityResult, context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             val data = result.data
@@ -108,7 +107,7 @@ class StatisticsViewModel @Inject constructor(
                 context.contentResolver.openOutputStream(it)?.let { outputStream ->
                     val dataList = db.manHoursDB().queryAllData()
                     for (row in dataList) {
-                        outputStream.write("${row.id},${row.userName},${row.stepNum},${row.likeNum},${row.logTimeString},${row.logTime}\n".toByteArray())
+                        outputStream.write("${row.id},${row.userName},${row.stepNum},${row.likeNum},${row.logTimeString},${row.logTime},${row.userOrder},${row.logModel}\n".toByteArray())
                     }
                     outputStream.flush()
                     outputStream.close()

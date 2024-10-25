@@ -5,7 +5,8 @@ import android.content.ComponentName
 import android.content.Intent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.equationl.wxsteplog.db.DbUtil
-import com.equationl.wxsteplog.model.LogUserMode
+import com.equationl.wxsteplog.model.LogModel
+import com.equationl.wxsteplog.model.LogSettingMode
 import com.equationl.wxsteplog.model.StepListIdModel
 import com.equationl.wxsteplog.model.WxStepLogSetting
 import com.equationl.wxsteplog.util.Utils
@@ -164,7 +165,7 @@ class LogMultipleWxStep : StepImpl() {
                         OverManager.log("查找到数据，排名：$orderText, 名称：$nameText, 步数：$stepText, 点赞: $likeText")
 
                         if (!orderText.isNullOrBlank() && !nameText.isNullOrBlank() && !stepText.isNullOrBlank() && !likeText.isNullOrBlank()) {
-                            if (setting.logUserMode == LogUserMode.Multiple) {
+                            if (setting.logUserMode == LogSettingMode.Multiple) {
                                 if (!setting.userNameList.contains(nameText.toString())) {
                                     OverManager.log("当前用户 $nameText 不在需要记录的列表中，忽略本次记录")
                                     continue
@@ -181,7 +182,7 @@ class LogMultipleWxStep : StepImpl() {
                                 likeNum = likeText.toString().toIntOrNull(),
                                 userName = nameText.toString(),
                                 userOrder = orderText.toString().toIntOrNull(),
-                                logUserMode = setting.logUserMode,
+                                logUserMode = if (setting.logUserMode == LogSettingMode.Multiple) LogModel.Multiple else LogModel.ALL,
                             )
                             alreadyLogNameList.add(nameText.toString())
                         }

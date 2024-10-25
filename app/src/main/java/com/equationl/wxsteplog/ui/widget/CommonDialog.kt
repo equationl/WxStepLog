@@ -10,6 +10,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowRange
+import com.equationl.wxsteplog.util.DateTimeUtil
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,7 +39,7 @@ fun DateTimeRangePickerDialog(
 
             TextButton(
                 onClick = {
-                    state.setSelection(0L, System.currentTimeMillis())
+                    state.setSelection(0L, System.currentTimeMillis() + DateTimeUtil.DAY_MILL_SECOND_TIME)
                 }
             ) {
                 Text(text = "全选")

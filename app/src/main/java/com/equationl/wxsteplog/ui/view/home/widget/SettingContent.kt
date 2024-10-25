@@ -35,11 +35,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.text.isDigitsOnly
-import com.equationl.wxsteplog.model.LogUserMode
+import com.equationl.wxsteplog.model.LogSettingMode
 
 @Composable
 fun HomeSettingContent(
-    logUserModel: MutableState<LogUserMode>,
+    logUserModel: MutableState<LogSettingMode>,
     userNameList: SnapshotStateList<String>,
     intervalTime: MutableState<String>,
     isRandomInterval: MutableState<Boolean>,
@@ -60,15 +60,15 @@ fun HomeSettingContent(
                 .padding(horizontal = 8.dp)
         ) {
             SingleChoiceSegmentedButtonRow {
-                LogUserMode.entries.forEachIndexed { index, statisticsShowScale ->
-                    SegmentedButton(selected = statisticsShowScale == logUserModel.value, onClick = { logUserModel.value = statisticsShowScale }, shape = SegmentedButtonDefaults.itemShape(index = index, count = LogUserMode.entries.size)) {
+                LogSettingMode.entries.forEachIndexed { index, statisticsShowScale ->
+                    SegmentedButton(selected = statisticsShowScale == logUserModel.value, onClick = { logUserModel.value = statisticsShowScale }, shape = SegmentedButtonDefaults.itemShape(index = index, count = LogSettingMode.entries.size)) {
                         Text(text = statisticsShowScale.showName)
                     }
                 }
             }
         }
 
-        if (logUserModel.value == LogUserMode.Multiple) {
+        if (logUserModel.value == LogSettingMode.Multiple) {
             Spacer(modifier = Modifier.height(8.dp))
             UserInputContent(userNameList)
         }

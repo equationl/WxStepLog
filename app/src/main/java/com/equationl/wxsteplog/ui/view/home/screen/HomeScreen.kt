@@ -36,7 +36,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.equationl.wxsteplog.R
 import com.equationl.wxsteplog.SettingGuideActivity
 import com.equationl.wxsteplog.constants.Route
-import com.equationl.wxsteplog.model.LogUserMode
+import com.equationl.wxsteplog.model.LogSettingMode
 import com.equationl.wxsteplog.model.WxStepLogSetting
 import com.equationl.wxsteplog.model.toLogUserMode
 import com.equationl.wxsteplog.step.OverManager
@@ -82,7 +82,7 @@ private fun HomePage(isAccessibilityServiceEnabled: MutableState<Boolean>) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var startState by remember { mutableIntStateOf(1) }
-    val logUserModel = remember { mutableStateOf(LogUserMode.Multiple) }
+    val logUserModel = remember { mutableStateOf(LogSettingMode.Multiple) }
     val userNameList = remember { mutableStateListOf<String>() }
     val intervalTime = remember { mutableStateOf("60000") }
     val isRandomInterval = remember { mutableStateOf(false) }
@@ -96,7 +96,7 @@ private fun HomePage(isAccessibilityServiceEnabled: MutableState<Boolean>) {
             intervalTime.value = DataStoreUtils.getSyncData(DataKey.LOG_INTERVAL_TIME, "60000")
             isRandomInterval.value = DataStoreUtils.getSyncData(DataKey.LOG_IS_INTERVAL_TIME_RANDOM_RANGE, false)
             randomIntervalValue.value = DataStoreUtils.getSyncData(DataKey.LOG_INTERVAL_TIME_RANDOM_RANGE, "30000")
-            logUserModel.value = DataStoreUtils.getSyncData(DataKey.LOG_USER_MODE, LogUserMode.Multiple.name).toLogUserMode() ?: LogUserMode.Multiple
+            logUserModel.value = DataStoreUtils.getSyncData(DataKey.LOG_USER_MODE, LogSettingMode.Multiple.name).toLogUserMode() ?: LogSettingMode.Multiple
         }
     }
 
@@ -120,7 +120,7 @@ private fun HomePage(isAccessibilityServiceEnabled: MutableState<Boolean>) {
         OutlinedButton (
             onClick = {
                 if (Assists.isAccessibilityServiceEnabled()) {
-                    if (logUserModel.value == LogUserMode.Multiple && userNameList.none { it.isNotBlank() }) {
+                    if (logUserModel.value == LogSettingMode.Multiple && userNameList.none { it.isNotBlank() }) {
                         Toast.makeText(context, "请至少添加一个要查找的用户名！", Toast.LENGTH_SHORT).show()
                         return@OutlinedButton
                     }
