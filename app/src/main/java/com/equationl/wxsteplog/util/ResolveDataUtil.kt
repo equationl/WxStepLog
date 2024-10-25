@@ -84,6 +84,7 @@ object ResolveDataUtil {
         return charList
     }
 
+    // TODO 导出排名数据
     suspend fun importDataFromCsv(
         csvLines: Sequence<String>,
         db: WxStepDB
@@ -105,7 +106,7 @@ object ResolveDataUtil {
             }
 
             try {
-                val wxStepTable = WxStepTable(userName = itemList[1], stepNum = itemList[2].toIntOrNull(), likeNum = itemList[3].toIntOrNull(), logTime = itemList[5].toLongOrNull() ?: 0, logTimeString = itemList[4])
+                val wxStepTable = WxStepTable(userName = itemList[1], stepNum = itemList[2].toIntOrNull(), likeNum = itemList[3].toIntOrNull(), logTime = itemList[5].toLongOrNull() ?: 0, logTimeString = itemList[4], userOrder = null, logModel = null)
                 val insertResult = db.manHoursDB().insertData(wxStepTable)
                 if (insertResult <= 0) {
                     hasConflict = true

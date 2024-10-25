@@ -349,8 +349,8 @@ object Assists {
     /**
      * 获取当前元素下的子元素（不包括子元素中的子元素）
      */
-    fun AccessibilityNodeInfo.getChildren(): ArrayList<AccessibilityNodeInfo> {
-        val nodes = arrayListOf<AccessibilityNodeInfo>()
+    fun AccessibilityNodeInfo.getChildren(): ArrayList<AccessibilityNodeInfo?> {
+        val nodes = arrayListOf<AccessibilityNodeInfo?>()
         for (i in 0 until this.childCount) {
             val child = getChild(i)
             nodes.add(child)

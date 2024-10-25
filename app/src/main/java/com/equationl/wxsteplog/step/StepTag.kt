@@ -3,6 +3,7 @@ package com.equationl.wxsteplog.step
 
 object StepTag {
     const val STEP_NONE = -1
+    const val STEP_REPEAT = -2
 
     /**
      * 全局静态常量步骤标识1~200，不够自己定义

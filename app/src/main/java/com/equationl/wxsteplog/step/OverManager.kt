@@ -56,9 +56,6 @@ object OverManager : StepListener {
                     StepManager.execute(LogWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!)
                 }
                 else {
-                    // TODO 这里还没有适配识别多个用户和全部识别的模式
-                    log("暂不支持多用户记录")
-                    return@setOnClickListener
                     StepManager.execute(LogMultipleWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!)
                 }
             }

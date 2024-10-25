@@ -1,12 +1,13 @@
 package com.equationl.wxsteplog.db
 
 import com.equationl.wxsteplog.App
+import com.equationl.wxsteplog.model.LogUserMode
 import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
 
 object DbUtil {
     val db by lazy { WxStepDB.create(App.instance) }
 
-    suspend fun saveData(stepNum: Int?, likeNum: Int?, userName: String) {
+    suspend fun saveData(stepNum: Int?, likeNum: Int?, userName: String, userOrder: Int?, logUserMode: LogUserMode?) {
         val currentTime = System.currentTimeMillis()
 
         db.manHoursDB().insertData(
@@ -15,7 +16,9 @@ object DbUtil {
                 stepNum = stepNum,
                 likeNum = likeNum,
                 logTime = currentTime,
-                logTimeString = currentTime.formatDateTime()
+                logTimeString = currentTime.formatDateTime(),
+                userOrder = userOrder,
+                logModel = logUserMode?.name
             )
         )
     }

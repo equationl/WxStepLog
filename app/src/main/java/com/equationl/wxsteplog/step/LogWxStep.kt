@@ -205,7 +205,9 @@ class LogWxStep : StepImpl() {
             DbUtil.saveData(
                 stepNum = dataList[0].text.toString().toIntOrNull(),
                 likeNum = dataList[1].text.toString().toIntOrNull(),
-                userName = setting.userNameList.first()
+                userName = setting.userNameList.first(),
+                userOrder = null,
+                logUserMode = setting.logUserMode
             )
             OverManager.log("数据记录完成，返回上一页")
             Assists.back()
