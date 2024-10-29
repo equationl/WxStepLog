@@ -1,6 +1,5 @@
 package com.equationl.wxsteplog.ui.view.home.widget
 
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,11 +30,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.text.isDigitsOnly
+import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.model.LogSettingMode
+import com.equationl.wxsteplog.ui.widget.ChooseUserNameDialog
+import com.vanpra.composematerialdialogs.rememberMaterialDialogState
 
 @Composable
 fun HomeSettingContent(
@@ -137,7 +138,8 @@ fun HomeSettingContent(
 private fun UserInputContent(
     userNameList: SnapshotStateList<String>,
 ) {
-    val context = LocalContext.current
+    val dialogState = rememberMaterialDialogState()
+
     userNameList.forEachIndexed { index, name ->
         OutlinedTextField(
             value = name,
@@ -175,11 +177,21 @@ private fun UserInputContent(
 
         TextButton (
             onClick = {
-                // TODO 支持自动获取
-                Toast.makeText(context, "查找当前微信用户名功能开发中，敬请期待", Toast.LENGTH_SHORT).show()
+                dialogState.show()
             }
         ) {
             Text("查找用户名")
         }
     }
+
+    ChooseUserNameDialog(
+        showState = dialogState,
+        initUserNameList = userNameList.toList(),
+        allUserNameList = Constants.allUserNameList,
+        onConfirm = {
+            userNameList.clear()
+            userNameList.addAll(it)
+            dialogState.hide()
+        }
+    )
 }

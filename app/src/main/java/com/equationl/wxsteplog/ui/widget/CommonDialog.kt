@@ -1,16 +1,37 @@
 package com.equationl.wxsteplog.ui.widget
 
 import android.util.Log
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.equationl.wxsteplog.step.OverManager
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowRange
 import com.equationl.wxsteplog.util.DateTimeUtil
+import com.vanpra.composematerialdialogs.MaterialDialog
+import com.vanpra.composematerialdialogs.MaterialDialogState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,4 +122,82 @@ fun CommonConfirmDialog(
             Text(text = content)
         }
     )
+}
+
+@Composable
+fun ChooseUserNameDialog(
+    showState: MaterialDialogState,
+    initUserNameList: List<String>,
+    allUserNameList: List<String>,
+    onConfirm: (List<String>) -> Unit,
+) {
+    val chooseUserNameList = remember { mutableStateListOf<String>() }
+
+    LaunchedEffect(Unit) {
+        chooseUserNameList.addAll(initUserNameList)
+    }
+
+    MaterialDialog(
+        dialogState = showState,
+        buttons = {
+            positiveButton("确定") {
+                onConfirm(chooseUserNameList.toList())
+            }
+            negativeButton("取消") {
+                showState.hide()
+            }
+        },
+        backgroundColor = MaterialTheme.colorScheme.background,
+        autoDismiss = false
+    ) {
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.Start,
+            modifier = Modifier
+                .heightIn(min = 180.dp)
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            Text("请选择需要记录的用户名", style = MaterialTheme.typography.titleLarge)
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = {
+                    OverManager.showFindUser()
+                }) {
+                    Text(text = "刷新数据")
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            if (allUserNameList.isEmpty()) {
+                Text(text = "暂无数据，请点击上方“刷新数据”按钮")
+            }
+            LazyColumn {
+                items(
+                    allUserNameList.size,
+                ) {
+                    val userName = allUserNameList[it]
+                    val isChecked = chooseUserNameList.contains(userName)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        Checkbox(isChecked, onCheckedChange = { isChecked ->
+                            if (isChecked) {
+                                chooseUserNameList.add(userName)
+                            }
+                            else {
+                                chooseUserNameList.remove(userName)
+                            }
+                        })
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = userName)
+                    }
+                }
+            }
+        }
+    }
 }

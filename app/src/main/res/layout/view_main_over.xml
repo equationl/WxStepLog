@@ -36,6 +36,12 @@
                         android:layout_height="wrap_content"
                         android:text="开始记录" />
 
+                    <Button
+                        android:id="@+id/btn_find_user_name"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="开始查找" />
+
                 </LinearLayout>
 
             </androidx.core.widget.NestedScrollView>

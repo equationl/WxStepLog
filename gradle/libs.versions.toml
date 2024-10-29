@@ -17,6 +17,7 @@ hiltNavigationCompose = "1.2.0"
 dagger = "2.51.1"
 vico = "2.0.0-beta.1"
 datastore = "1.1.1"
+dialog-core = "0.9.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -49,6 +50,7 @@ vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.
 vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
 androidx-datastore-core = { module = "androidx.datastore:datastore-core", version.ref = "datastore" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+dialog-core = { module = "io.github.vanpra.compose-material-dialogs:core", version.ref = "dialog-core" }
 
 
 [plugins]

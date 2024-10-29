@@ -2,14 +2,13 @@ package com.equationl.wxsteplog.step
 
 import android.annotation.SuppressLint
 import android.view.LayoutInflater
+import android.view.View
 import androidx.core.view.isVisible
 import androidx.core.widget.NestedScrollView
 import com.blankj.utilcode.util.ScreenUtils
 import com.blankj.utilcode.util.SizeUtils
 import com.blankj.utilcode.util.ThreadUtils
 import com.blankj.utilcode.util.TimeUtils
-import com.equationl.wxsteplog.App
-import com.equationl.wxsteplog.R
 import com.equationl.wxsteplog.databinding.ViewMainOverBinding
 import com.equationl.wxsteplog.model.LogSettingMode
 import com.equationl.wxsteplog.model.WxStepLogSetting
@@ -26,24 +25,34 @@ object OverManager : StepListener {
 
     private var setting: WxStepLogSetting? = null
 
-    private fun createView(): ViewMainOverBinding? {
+    private fun createView(showType: ShowType = ShowType.LOG): ViewMainOverBinding? {
         return Assists.service?.let {
             StepManager.stepListeners.add(this)
             ViewMainOverBinding.inflate(LayoutInflater.from(it)).apply {
-                initView(this)
+                initView(this, showType)
             }
 
         }
     }
 
-    private fun initView(viewMainOverBinding: ViewMainOverBinding) {
+    private fun initView(viewMainOverBinding: ViewMainOverBinding, showType: ShowType = ShowType.LOG) {
         with(viewMainOverBinding) {
-            parent.assistsWindowLayoutWrapperBinding.tvTitle.text = App.instance.baseContext.getText(
-                R.string.app_name
-            )
+            parent.assistsWindowLayoutWrapperBinding.tvTitle.text = when(showType) {
+                ShowType.LOG -> "记录数据"
+                ShowType.FIND_USER -> "查找用户名"
+            }
             llOption.isVisible = true
             llLog.isVisible = false
             btnCloseLog.isVisible = false
+
+            if (showType == ShowType.FIND_USER) {
+                btnLogWxStep.visibility = View.GONE
+                btnFindUserName.visibility = View.VISIBLE
+            }
+            else {
+                btnLogWxStep.visibility = View.VISIBLE
+                btnFindUserName.visibility = View.GONE
+            }
 
             btnLogWxStep.setOnClickListener {
                 if (setting == null) {
@@ -58,6 +67,11 @@ object OverManager : StepListener {
                 else {
                     StepManager.execute(LogMultipleWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!)
                 }
+            }
+
+            btnFindUserName.setOnClickListener {
+                beginStart(this)
+                StepManager.execute(FindUserNameStep::class.java, StepTag.STEP_1, begin = true)
             }
 
             btnStop.setOnClickListener {
@@ -82,18 +96,35 @@ object OverManager : StepListener {
 
     fun show(setting: WxStepLogSetting) {
         this.setting = setting
+        AssistsWindowManager.removeView(viewMainOver?.root)
 
-        viewMainOver ?: let {
-            viewMainOver = createView()
-            val width = ScreenUtils.getScreenWidth() - 60
-            val height = SizeUtils.dp2px(300f)
-            viewMainOver?.root?.layoutParams?.width = width
-            viewMainOver?.root?.layoutParams?.height = height
-            viewMainOver?.root?.minWidth = (ScreenUtils.getScreenWidth() * 0.6).toInt()
-            viewMainOver?.root?.minHeight = height
-            viewMainOver?.root?.setCenter()
-            AssistsWindowManager.addAssistsWindowLayout(viewMainOver?.root)
-        }
+        viewMainOver = createView()
+        val width = ScreenUtils.getScreenWidth() - 60
+        val height = SizeUtils.dp2px(300f)
+        viewMainOver?.root?.layoutParams?.width = width
+        viewMainOver?.root?.layoutParams?.height = height
+        viewMainOver?.root?.minWidth = (ScreenUtils.getScreenWidth() * 0.6).toInt()
+        viewMainOver?.root?.minHeight = height
+        viewMainOver?.root?.setCenter()
+        AssistsWindowManager.addAssistsWindowLayout(viewMainOver?.root)
+
+    }
+
+    fun showFindUser() {
+        AssistsWindowManager.removeView(viewMainOver?.root)
+        viewMainOver = createView(showType = ShowType.FIND_USER)
+        val width = ScreenUtils.getScreenWidth() - 60
+        val height = SizeUtils.dp2px(300f)
+        viewMainOver?.root?.layoutParams?.width = width
+        viewMainOver?.root?.layoutParams?.height = height
+        viewMainOver?.root?.minWidth = (ScreenUtils.getScreenWidth() * 0.6).toInt()
+        viewMainOver?.root?.minHeight = height
+        viewMainOver?.root?.setCenter()
+        AssistsWindowManager.addAssistsWindowLayout(viewMainOver?.root)
+    }
+
+    fun hideOverlay() {
+        AssistsWindowManager.removeView(viewMainOver?.root)
     }
 
     private fun beginStart(view: ViewMainOverBinding) {
@@ -166,5 +197,10 @@ object OverManager : StepListener {
             if (!isAutoScrollLog) return@runOnUiThreadDelayed
             onAutoScrollLog()
         }, 250)
+    }
+
+    enum class ShowType {
+        LOG,
+        FIND_USER
     }
 }

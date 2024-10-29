@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.vico.compose)
     implementation(libs.vico.compose.m3)
+    implementation(libs.dialog.core)
 
     ksp(libs.androidx.room.compiler)
     ksp(libs.dagger.compiler)
