@@ -421,8 +421,8 @@ private fun FilterUser(state: StatisticsState, onChangeFilter: (newFilter: Stati
             label = "arrowRotateDegrees"
         )
         Text(
-            state.filter.user  ?: "筛选用户",
-            color = if (state.filter.user != null) MaterialTheme.colorScheme.primary else Color.Unspecified
+            if (state.filter.isFilterUser) state.filter.user  ?: "筛选用户" else "筛选用户",
+            color = if (state.filter.isFilterUser) MaterialTheme.colorScheme.primary else Color.Unspecified
         )
         Icon(
             Icons.Filled.ArrowDropDown,
@@ -460,11 +460,11 @@ private fun UserDropMenu(
         options.forEachIndexed  { index, item ->
             DropdownMenuItem(
                 text = {
-                    Text(text = item)
+                    Text(text = item, color = if (index == 0) MaterialTheme.colorScheme.error else Color.Unspecified)
                 },
                 onClick = {
                     onChangeFilter(
-                        state.filter.copy(user = if (index == 0) null else item)
+                        state.filter.copy(user = if (index == 0) null else item, isFilterUser = index != 0)
                     )
                 },
             )

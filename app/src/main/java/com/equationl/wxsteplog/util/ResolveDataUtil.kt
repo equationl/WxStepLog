@@ -16,34 +16,31 @@ object ResolveDataUtil {
     fun rawDataToStaticsModel(
         rawDataList: List<WxStepTable>,
         isFoldData: Boolean,
-        user: String?
     ): List<StaticsScreenModel> {
         val result = mutableListOf<StaticsScreenModel>()
         /** {"user", Pair(stepNum, likeNum)} */
         val lastDataMap = mutableMapOf<String, Pair<Int?, Int?>>()
 
         for (item in rawDataList) {
-            if (user == null || user == item.userName) {
-                if (isFoldData) {
-                    val lastData = lastDataMap[item.userName]
-                    if (lastData != null && lastData.first == item.stepNum && lastData.second == item.likeNum) {
-                        continue
-                    }
+            if (isFoldData) {
+                val lastData = lastDataMap[item.userName]
+                if (lastData != null && lastData.first == item.stepNum && lastData.second == item.likeNum) {
+                    continue
                 }
-
-                result.add(
-                    StaticsScreenModel(
-                        id = item.id,
-                        logTime = item.logTime,
-                        logTimeString = item.logTimeString,
-                        stepNum = item.stepNum ?: 0,
-                        likeNum = item.likeNum ?: 0,
-                        headerTitle = item.logTime.formatDateTime("yyyy-MM-dd"),
-                        userName = item.userName
-                    )
-                )
-                lastDataMap[item.userName] = Pair(item.stepNum, item.likeNum)
             }
+
+            result.add(
+                StaticsScreenModel(
+                    id = item.id,
+                    logTime = item.logTime,
+                    logTimeString = item.logTimeString,
+                    stepNum = item.stepNum ?: 0,
+                    likeNum = item.likeNum ?: 0,
+                    headerTitle = item.logTime.formatDateTime("yyyy-MM-dd"),
+                    userName = item.userName
+                )
+            )
+            lastDataMap[item.userName] = Pair(item.stepNum, item.likeNum)
         }
 
         return result

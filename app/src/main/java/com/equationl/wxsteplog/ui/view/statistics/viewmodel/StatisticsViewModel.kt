@@ -158,10 +158,17 @@ class StatisticsViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true) }
 
         val userList = db.manHoursDB().getCurrentUserList()
+        var filter = _uiState.value.filter
+        if (filter.user == null || !filter.isFilterUser) { // 默认筛选第一个用户
+            filter = filter.copy(user = userList.firstOrNull(), isFilterUser = true)
+        }
+
         // 需要按时区偏移一下
         val offset = TimeZone.getDefault().rawOffset
-        val rawDataList = db.manHoursDB().queryRangeDataList(_uiState.value.showRange.start - offset, _uiState.value.showRange.end - offset, 1, Int.MAX_VALUE)
-        var filter = _uiState.value.filter
+        val rawDataList = if (filter.isFilterUser && filter.user != null)
+            db.manHoursDB().queryRangeDataListByUserName(_uiState.value.showRange.start - offset, _uiState.value.showRange.end - offset, filter.user!!, 1, Int.MAX_VALUE)
+        else
+            db.manHoursDB().queryRangeDataList(_uiState.value.showRange.start - offset, _uiState.value.showRange.end - offset, 1, Int.MAX_VALUE)
 
         // 统计图需要平滑数据，所以不能折叠
         if (_uiState.value.showType == StatisticsShowType.Chart) {
@@ -186,6 +193,6 @@ class StatisticsViewModel @Inject constructor(
     }
 
     private fun resolveData(rawDataList: List<WxStepTable>, filter: StatisticsFilter): List<StaticsScreenModel> {
-        return ResolveDataUtil.rawDataToStaticsModel(rawDataList, filter.isFoldData, filter.user)
+        return ResolveDataUtil.rawDataToStaticsModel(rawDataList, filter.isFoldData)
     }
 }

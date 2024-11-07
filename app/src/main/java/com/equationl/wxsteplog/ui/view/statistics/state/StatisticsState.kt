@@ -27,6 +27,8 @@ data class StatisticsFilter(
     val isFoldData: Boolean = true,
      /** 筛选指定用户， null 表示不筛选*/
     val user: String? = null,
+     /** 是否筛选指定用户 */
+    val isFilterUser: Boolean = false,
 )
 
 data class StatisticsChartData(
