@@ -421,7 +421,7 @@ private fun FilterUser(state: StatisticsState, onChangeFilter: (newFilter: Stati
             label = "arrowRotateDegrees"
         )
         Text(
-            if (state.filter.isFilterUser) state.filter.user  ?: "筛选用户" else "筛选用户",
+            if (state.filter.isFilterUser) state.filter.user  ?: "未指定用户" else "筛选用户",
             color = if (state.filter.isFilterUser) MaterialTheme.colorScheme.primary else Color.Unspecified
         )
         Icon(

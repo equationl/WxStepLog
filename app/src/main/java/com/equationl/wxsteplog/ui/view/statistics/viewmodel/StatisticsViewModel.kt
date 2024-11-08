@@ -3,6 +3,7 @@ package com.equationl.wxsteplog.ui.view.statistics.viewmodel
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.icu.text.Collator
 import android.icu.util.TimeZone
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Locale
 import javax.inject.Inject
 
 
@@ -43,7 +45,7 @@ class StatisticsViewModel @Inject constructor(
 
     fun init() {
         viewModelScope.launch {
-            loadData()
+            loadData(isFirstLoading = true)
         }
     }
 
@@ -154,13 +156,15 @@ class StatisticsViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadData() = withContext(Dispatchers.IO) {
+    private suspend fun loadData(isFirstLoading: Boolean = false) = withContext(Dispatchers.IO) {
         _uiState.update { it.copy(isLoading = true) }
 
-        val userList = db.manHoursDB().getCurrentUserList()
+        val userList = db.manHoursDB().getCurrentUserList().sortedWith { o1, o2 -> Collator.getInstance(Locale.CHINESE).compare(o1, o2) }
+
         var filter = _uiState.value.filter
-        if (filter.user == null || !filter.isFilterUser) { // 默认筛选第一个用户
+        if (isFirstLoading && (filter.user == null || !filter.isFilterUser)) { // 默认筛选第一个用户
             filter = filter.copy(user = userList.firstOrNull(), isFilterUser = true)
+            _uiState.update { it.copy(filter = filter) }
         }
 
         // 需要按时区偏移一下
