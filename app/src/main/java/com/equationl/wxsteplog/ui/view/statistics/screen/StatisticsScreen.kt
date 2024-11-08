@@ -334,7 +334,7 @@ private fun HomeContent(
     else {
         when (state.showType) {
             StatisticsShowType.List -> ListContent(state, onChangeFilter)
-            StatisticsShowType.Chart -> ChartContent(state)
+            StatisticsShowType.Chart -> ChartContent(state, onChangeFilter)
         }
     }
 }
@@ -490,6 +490,7 @@ private fun TodoListGroupHeader(leftText: String, rightText: String = "") {
 @Composable
 private fun ChartContent(
     state: StatisticsState,
+    onChangeFilter: (newFilter: StatisticsFilter) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -498,6 +499,8 @@ private fun ChartContent(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        HeaderFilter(state, onChangeFilter = onChangeFilter)
+
         for (userChartData in state.chartData) {
             Text(userChartData.key, style = MaterialTheme.typography.labelSmall)
             Spacer(modifier = Modifier.height(8.dp))
