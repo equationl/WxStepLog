@@ -226,28 +226,36 @@ class LogMultipleWxStep : StepImpl() {
 
     private fun getBaseIds(list: List<AccessibilityNodeInfo?>): StepListIdModel? {
         // 基准 item 用于确定 view 的 id
-        val baseItem = list[1]!!
-        val textNode = mutableListOf<AccessibilityNodeInfo>()
-        for (node in baseItem.getNodes()) {
-            if (!node.text.isNullOrBlank()) {
-                textNode.add(node)
+        for (baseItem in list) {
+            if (baseItem == null) {
+                OverManager.log("baseItem is null")
+                continue
             }
+            val textNode = mutableListOf<AccessibilityNodeInfo>()
+            for (node in baseItem.getNodes()) {
+                if (!node.text.isNullOrBlank()) {
+                    textNode.add(node)
+                }
+            }
+
+            if (textNode.size != 4) {
+                OverManager.log("基准数据查找失败，需要数量 4， 当前为 ${textNode.size}")
+                continue
+            }
+
+            // 按照左到右顺序排序
+            textNode.sortBy { it.getBoundsInScreen().left }
+            return StepListIdModel(
+                itemParentId = baseItem.viewIdResourceName,
+                itemOrderId = textNode[0].viewIdResourceName,
+                itemNameId = textNode[1].viewIdResourceName,
+                itemStepId = textNode[2].viewIdResourceName,
+                itemLikeId = textNode[3].viewIdResourceName,
+            )
         }
 
-        if (textNode.size != 4) {
-            OverManager.log("基准数据查找失败，需要数量 4， 当前为 ${textNode.size}")
-            return null
-        }
-
-        // 按照左到右顺序排序
-        textNode.sortBy { it.getBoundsInScreen().left }
-        return StepListIdModel(
-            itemParentId = baseItem.viewIdResourceName,
-            itemOrderId = textNode[0].viewIdResourceName,
-            itemNameId = textNode[1].viewIdResourceName,
-            itemStepId = textNode[2].viewIdResourceName,
-            itemLikeId = textNode[3].viewIdResourceName,
-        )
+        OverManager.log("遍历完毕当前数据后依旧没有找到基准数据")
+        return null
     }
 
     private fun getListView(): AccessibilityNodeInfo? {
