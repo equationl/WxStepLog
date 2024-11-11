@@ -10,7 +10,6 @@ data class StatisticsState(
     val dataList: List<StaticsScreenModel> = listOf(),
     /** {"user": list} */
     val chartData: Map<String, List<StatisticsChartData>> = mapOf(),
-    val showRange: StatisticsShowRange = DateTimeUtil.getCurrentDayRange(), // 默认今天
     val showType: StatisticsShowType = StatisticsShowType.List,
     val listState: LazyListState = LazyListState(),
     val filter: StatisticsFilter = StatisticsFilter(),
@@ -25,6 +24,8 @@ data class StatisticsShowRange(
 data class StatisticsFilter(
      /** 是否折叠未改变的数据 */
     val isFoldData: Boolean = true,
+     /** 读取的数据日期范围 */
+     val showRange: StatisticsShowRange = DateTimeUtil.getCurrentDayRange(), // 默认今天
      /** 筛选指定用户， null 表示不筛选*/
     val user: String? = null,
      /** 是否筛选指定用户 */

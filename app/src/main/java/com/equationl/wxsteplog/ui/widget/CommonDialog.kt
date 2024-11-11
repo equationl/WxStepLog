@@ -125,6 +125,34 @@ fun CommonConfirmDialog(
 }
 
 @Composable
+fun ExportConfirmDialog(
+    onConfirmWithFilter: () -> Unit,
+    onConfirmAll: () -> Unit,
+    onDismissRequest: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(text = "取消")
+            }
+            TextButton(onClick = onConfirmAll) {
+                Text(text = "全部")
+            }
+            TextButton(onClick = onConfirmWithFilter) {
+                Text(text = "筛选")
+            }
+        },
+        title = {
+            Text(text = "导出数据")
+        },
+        text = {
+            Text(text = "请选择导出数据类型：“全部” 表示导出当前已记录的全部数据；“筛选” 表示导出当前筛选条件下的数据")
+        }
+    )
+}
+
+@Composable
 fun ChooseUserNameDialog(
     showState: MaterialDialogState,
     initUserNameList: List<String>,

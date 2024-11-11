@@ -74,6 +74,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.model.StaticsScreenModel
 import com.equationl.wxsteplog.ui.LocalNavController
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsFilter
@@ -82,6 +83,7 @@ import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowType
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsState
 import com.equationl.wxsteplog.ui.view.statistics.viewmodel.StatisticsViewModel
 import com.equationl.wxsteplog.ui.widget.DateTimeRangePickerDialog
+import com.equationl.wxsteplog.ui.widget.ExportConfirmDialog
 import com.equationl.wxsteplog.ui.widget.LineSeriesChart
 import com.equationl.wxsteplog.ui.widget.ListEmptyContent
 import com.equationl.wxsteplog.ui.widget.LoadingContent
@@ -94,11 +96,12 @@ fun StatisticsScreen(viewModel: StatisticsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    var isShowExportDialog by remember { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        viewModel.exportData(result, context)
+        viewModel.exportData(result, context, if (Constants.isExportWithFilter) state.filter else null)
     }
 
     val importLauncher = rememberLauncherForActivityResult(
@@ -134,7 +137,7 @@ fun StatisticsScreen(viewModel: StatisticsViewModel = hiltViewModel()) {
         topBar = {
             TopBar(
                 showType = state.showType,
-                iniDateRangeValue = state.showRange,
+                iniDateRangeValue = state.filter.showRange,
                 onFilterDateRange = viewModel::onFilterShowRange,
                 scrollBehavior = scrollBehavior,
                 collapsedFraction = collapsedFraction,
@@ -142,8 +145,7 @@ fun StatisticsScreen(viewModel: StatisticsViewModel = hiltViewModel()) {
                     viewModel.onChangeShowType(context)
                 },
                 onExport = {
-                    val intent = viewModel.createNewDocumentIntent()
-                    exportLauncher.launch(intent)
+                    isShowExportDialog = true
                 },
                 onImport = {
                     val intent = viewModel.createReadDocumentIntent()
@@ -183,9 +185,30 @@ fun StatisticsScreen(viewModel: StatisticsViewModel = hiltViewModel()) {
                 LoadingContent()
             }
             else {
-                HomeContent(state, viewModel::onChangeFilter)
+                HomeContent(state, collapsedFraction, viewModel::onChangeFilter)
             }
         }
+    }
+
+
+    if (isShowExportDialog) {
+        ExportConfirmDialog(
+            onConfirmWithFilter = {
+                Constants.isExportWithFilter = true
+                val intent = viewModel.createNewDocumentIntent()
+                exportLauncher.launch(intent)
+                isShowExportDialog = false
+            },
+            onConfirmAll = {
+                Constants.isExportWithFilter = false
+                val intent = viewModel.createNewDocumentIntent()
+                exportLauncher.launch(intent)
+                isShowExportDialog = false
+            },
+            onDismissRequest = {
+                isShowExportDialog = false
+            }
+        )
     }
 
 }
@@ -205,7 +228,6 @@ private fun TopBar(
     val navController = LocalNavController.current
     var isShowDatePickedDialog by remember { mutableStateOf(false) }
     var isExpandMenu by remember { mutableStateOf(false) }
-    val context = LocalContext.current
 
     MediumTopAppBar(
         title = {
@@ -325,16 +347,31 @@ private fun TopBarMoreFunction(
 @Composable
 private fun HomeContent(
     state: StatisticsState,
+    collapsedFraction: Float,
     onChangeFilter: (newFilter: StatisticsFilter) -> Unit
 ) {
 
-    if (state.dataList.isEmpty()) {
-        ListEmptyContent("还没有数据哦~\n可以试试修改筛选条件哦")
-    }
-    else {
-        when (state.showType) {
-            StatisticsShowType.List -> ListContent(state, onChangeFilter)
-            StatisticsShowType.Chart -> ChartContent(state, onChangeFilter)
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Top,
+        horizontalAlignment = Alignment.Start
+    ) {
+        AnimatedVisibility(
+            visible = collapsedFraction < 0.5f,
+            enter = slideInVertically(initialOffsetY = { -it }),
+            exit = slideOutVertically(targetOffsetY = { -it })
+        ) {
+            HeaderFilter(state, onChangeFilter = onChangeFilter)
+        }
+
+        if (state.dataList.isEmpty()) {
+            ListEmptyContent("还没有数据哦~\n可以试试修改筛选条件哦")
+        }
+        else {
+            when (state.showType) {
+                StatisticsShowType.List -> ListContent(state)
+                StatisticsShowType.Chart -> ChartContent(state)
+            }
         }
     }
 }
@@ -342,8 +379,7 @@ private fun HomeContent(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ListContent(
-    state: StatisticsState,
-    onChangeFilter: (newFilter: StatisticsFilter) -> Unit
+    state: StatisticsState
 ) {
     Column(
         Modifier
@@ -352,9 +388,9 @@ private fun ListContent(
         LazyColumn(
             state = state.listState
         ) {
-            item(key = "headerFilter") {
-                HeaderFilter(state, onChangeFilter = onChangeFilter)
-            }
+//            item(key = "headerFilter") {
+//                HeaderFilter(state, onChangeFilter = onChangeFilter)
+//            }
 
             var lastTitle = ""
 
@@ -489,8 +525,7 @@ private fun TodoListGroupHeader(leftText: String, rightText: String = "") {
 
 @Composable
 private fun ChartContent(
-    state: StatisticsState,
-    onChangeFilter: (newFilter: StatisticsFilter) -> Unit,
+    state: StatisticsState
 ) {
     Column(
         modifier = Modifier
@@ -499,7 +534,7 @@ private fun ChartContent(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        HeaderFilter(state, onChangeFilter = onChangeFilter)
+        //HeaderFilter(state, onChangeFilter = onChangeFilter)
 
         for (userChartData in state.chartData) {
             Text(userChartData.key, style = MaterialTheme.typography.labelSmall)

@@ -20,6 +20,7 @@ import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsState
 import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
 import com.equationl.wxsteplog.util.ResolveDataUtil
 import com.equationl.wxsteplog.util.Utils
+import com.equationl.wxsteplog.util.log.LogUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,7 +53,7 @@ class StatisticsViewModel @Inject constructor(
     fun onFilterShowRange(value: StatisticsShowRange) {
         _uiState.update {
             it.copy(
-                showRange = value
+                filter = it.filter.copy(showRange = value),
             )
         }
         viewModelScope.launch {
@@ -101,13 +102,23 @@ class StatisticsViewModel @Inject constructor(
         return intent
     }
 
-    fun exportData(result: ActivityResult, context: Context) {
+    fun exportData(result: ActivityResult, context: Context, filter: StatisticsFilter?) {
         viewModelScope.launch(Dispatchers.IO) {
             val data = result.data
             val uri = data?.data
             uri?.let {
                 context.contentResolver.openOutputStream(it)?.let { outputStream ->
-                    val dataList = db.manHoursDB().queryAllData()
+                    LogUtil.i("el", "export with filter: $filter")
+                    val dataList = if (filter == null) {
+                        db.manHoursDB().queryAllData()
+                    } else {
+                        val offset = TimeZone.getDefault().rawOffset
+                        if (filter.isFilterUser && filter.user != null)
+                            db.manHoursDB().queryRangeDataListByUserName(_uiState.value.filter.showRange.start - offset, _uiState.value.filter.showRange.end - offset, filter.user, 1, Int.MAX_VALUE)
+                        else
+                            db.manHoursDB().queryRangeDataList(_uiState.value.filter.showRange.start - offset, _uiState.value.filter.showRange.end - offset, 1, Int.MAX_VALUE)
+                    }
+
                     for (row in dataList) {
                         outputStream.write("${row.id},${row.userName},${row.stepNum},${row.likeNum},${row.logTimeString},${row.logTime},${row.userOrder},${row.logModel}\n".toByteArray())
                     }
@@ -170,9 +181,9 @@ class StatisticsViewModel @Inject constructor(
         // 需要按时区偏移一下
         val offset = TimeZone.getDefault().rawOffset
         val rawDataList = if (filter.isFilterUser && filter.user != null)
-            db.manHoursDB().queryRangeDataListByUserName(_uiState.value.showRange.start - offset, _uiState.value.showRange.end - offset, filter.user!!, 1, Int.MAX_VALUE)
+            db.manHoursDB().queryRangeDataListByUserName(_uiState.value.filter.showRange.start - offset, _uiState.value.filter.showRange.end - offset, filter.user!!, 1, Int.MAX_VALUE)
         else
-            db.manHoursDB().queryRangeDataList(_uiState.value.showRange.start - offset, _uiState.value.showRange.end - offset, 1, Int.MAX_VALUE)
+            db.manHoursDB().queryRangeDataList(_uiState.value.filter.showRange.start - offset, _uiState.value.filter.showRange.end - offset, 1, Int.MAX_VALUE)
 
         // 统计图需要平滑数据，所以不能折叠
         if (_uiState.value.showType == StatisticsShowType.Chart) {
