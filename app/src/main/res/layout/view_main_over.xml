@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.ven.assists.AssistsWindowLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/parent"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
@@ -45,7 +46,6 @@
                 </LinearLayout>
 
             </androidx.core.widget.NestedScrollView>
-
 
             <Button
                 android:id="@+id/btn_log"
@@ -102,12 +102,26 @@
                 </FrameLayout>
             </androidx.core.widget.NestedScrollView>
 
-            <Button
-                android:id="@+id/btn_stop"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:backgroundTint="#E02626"
-                android:text="停止" />
+            <LinearLayout
+                android:id="@+id/running_btn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" >
+
+                <Button
+                    android:id="@+id/btn_stop"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="#E02626"
+                    android:text="停止" />
+
+                <Button
+                    android:id="@+id/btn_show_data_list"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="#ccc000"
+                    android:text="查看数据" />
+
+            </LinearLayout>
 
             <Button
                 android:id="@+id/btn_close_log"
@@ -116,6 +130,60 @@
                 android:backgroundTint="#4CAF50"
                 android:text="关闭日志" />
         </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/step_data_ll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
+
+            <Button
+                android:id="@+id/step_data_close_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="#4CAF50"
+                android:text="返回" />
+
+            <CheckBox
+                android:id="@+id/step_data_foldData_check"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:checked="true"
+                android:text="折叠数据" />
+
+            <CheckBox
+                android:id="@+id/step_data_filterUser_check"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:checked="true"
+                android:text="筛选用户" />
+
+<!--            <EditText-->
+<!--                android:id="@+id/step_data_user_et"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginStart="8dp"-->
+<!--                android:singleLine="true"-->
+<!--                android:imeOptions="actionSearch"-->
+<!--                android:inputType="text"-->
+<!--                android:hint="用户名（留空表示不过滤）" />-->
+
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/step_data_list_rv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
 
     </LinearLayout>
 

@@ -1,29 +1,46 @@
 package com.equationl.wxsteplog.step
 
 import android.annotation.SuppressLint
+import android.icu.util.TimeZone
 import android.view.LayoutInflater
 import android.view.View
 import androidx.core.view.isVisible
 import androidx.core.widget.NestedScrollView
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.blankj.utilcode.util.ScreenUtils
 import com.blankj.utilcode.util.SizeUtils
 import com.blankj.utilcode.util.ThreadUtils
 import com.blankj.utilcode.util.TimeUtils
+import com.equationl.wxsteplog.adapter.FloatViewStepDataAdapter
+import com.equationl.wxsteplog.constants.Constants
+import com.equationl.wxsteplog.databinding.EmptyItemBinding
 import com.equationl.wxsteplog.databinding.ViewMainOverBinding
+import com.equationl.wxsteplog.db.DbUtil
 import com.equationl.wxsteplog.model.LogSettingMode
 import com.equationl.wxsteplog.model.WxStepLogSetting
+import com.equationl.wxsteplog.util.DateTimeUtil
+import com.equationl.wxsteplog.util.ResolveDataUtil
 import com.equationl.wxsteplog.util.log.LogUtil
 import com.ven.assists.Assists
 import com.ven.assists.AssistsWindowManager
 import com.ven.assists.stepper.StepListener
 import com.ven.assists.stepper.StepManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 object OverManager : StepListener {
     private const val TAG = "OverManager"
     @SuppressLint("StaticFieldLeak")
     private var viewMainOver: ViewMainOverBinding? = null
-
     private var setting: WxStepLogSetting? = null
+    private var dataListAdapter: FloatViewStepDataAdapter? = null
+    private var dao = DbUtil.db.manHoursDB()
+
+    // 统计数据过滤参数
+    private var isFilterUser: Boolean = true
+    private var isFoldData: Boolean = true
 
     private fun createView(showType: ShowType = ShowType.LOG): ViewMainOverBinding? {
         return Assists.service?.let {
@@ -48,10 +65,12 @@ object OverManager : StepListener {
             if (showType == ShowType.FIND_USER) {
                 btnLogWxStep.visibility = View.GONE
                 btnFindUserName.visibility = View.VISIBLE
+                btnShowDataList.visibility = View.GONE
             }
             else {
                 btnLogWxStep.visibility = View.VISIBLE
                 btnFindUserName.visibility = View.GONE
+                btnShowDataList.visibility = View.VISIBLE
             }
 
             btnLogWxStep.setOnClickListener {
@@ -86,6 +105,50 @@ object OverManager : StepListener {
                 btnCloseLog.isVisible = true
                 btnStop.isVisible = false
             }
+
+            btnShowDataList.setOnClickListener {
+                // 显示数据
+                viewMainOver?.llLog?.isVisible = false
+                viewMainOver?.runningBtn?.isVisible = false
+                stepDataLl.visibility = View.VISIBLE
+                loadStepListData()
+            }
+
+            stepDataCloseBtn.setOnClickListener {
+                // 关闭显示数据
+                stepDataLl.visibility = View.GONE
+                viewMainOver?.llLog?.isVisible = true
+                viewMainOver?.runningBtn?.isVisible = true
+            }
+
+            stepDataFoldDataCheck.setOnCheckedChangeListener { buttonView, isChecked ->
+                log("更改折叠数据状态为：$isChecked")
+                isFoldData = isChecked
+                loadStepListData()
+            }
+
+            stepDataFilterUserCheck.setOnCheckedChangeListener { buttonView, isChecked ->
+                log("更改筛选用户状态为：$isChecked")
+                isFilterUser = isChecked
+                loadStepListData()
+            }
+
+//            stepDataUserEt.setOnEditorActionListener { v, actionId, event ->
+//                // 这里无法输入数据哦，没法获得焦点，如果这里拿到焦点的话又会与无障碍获取后面的页面内容冲突
+//                if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+//                    log("更改筛选用户为： ${v.text}")
+//                    filterUser = v.text.toString()
+//                    loadStepListData()
+//                    return@setOnEditorActionListener true
+//                }
+//                false
+//            }
+
+            dataListAdapter = FloatViewStepDataAdapter(mutableListOf())
+            stepDataListRv.layoutManager = LinearLayoutManager(Assists.service)
+            stepDataListRv.adapter = dataListAdapter
+            val noDataView = EmptyItemBinding.inflate(LayoutInflater.from(Assists.service))
+            dataListAdapter?.setEmptyView(noDataView.root)
 
             root.setOnCloseClickListener {
                 clear()
@@ -137,6 +200,23 @@ object OverManager : StepListener {
         }
     }
 
+    private fun loadStepListData() {
+        CoroutineScope(Dispatchers.IO).launch {
+            val showRange = DateTimeUtil.getCurrentDayRange()
+            val offset = TimeZone.getDefault().rawOffset
+            val rawDataList = if (isFilterUser && Constants.showDataFilterUserName.isNotBlank())
+                dao.queryRangeDataListByUserName(showRange.start - offset, showRange.end - offset, Constants.showDataFilterUserName, 1, Int.MAX_VALUE)
+            else
+                dao.queryRangeDataList(showRange.start - offset, showRange.end - offset, 1, Int.MAX_VALUE)
+
+            val resolveData = ResolveDataUtil.rawDataToStaticsModel(rawDataList, isFoldData)
+            withContext(Dispatchers.Main) {
+                dataListAdapter?.setList(resolveData)
+            }
+
+        }
+    }
+
     override fun onStepStop() {
         log("已停止")
     }
@@ -149,6 +229,7 @@ object OverManager : StepListener {
         StepManager.isStop = true
         isAutoScrollLog = false
         viewMainOver?.btnStop?.isVisible = false
+        viewMainOver?.btnShowDataList?.isVisible = false
         viewMainOver?.btnCloseLog?.isVisible = true
     }
 

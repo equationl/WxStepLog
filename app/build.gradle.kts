@@ -14,8 +14,8 @@ android {
         applicationId = "com.equationl.wxsteplog"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -70,13 +70,15 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.datastore.core)
     implementation(libs.androidx.datastore.preferences)
-
+    implementation(libs.androidx.recyclerview)
+    implementation(libs.androidx.constraintlayout)
 
     implementation(libs.gson)
     implementation(libs.hilt.android)
     implementation(libs.vico.compose)
     implementation(libs.vico.compose.m3)
     implementation(libs.dialog.core)
+    implementation(libs.baserecyclerviewadapterhelper)
 
     ksp(libs.androidx.room.compiler)
     ksp(libs.dagger.compiler)

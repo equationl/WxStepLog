@@ -35,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.equationl.wxsteplog.R
 import com.equationl.wxsteplog.SettingGuideActivity
+import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.constants.Route
 import com.equationl.wxsteplog.model.LogSettingMode
 import com.equationl.wxsteplog.model.WxStepLogSetting
@@ -87,6 +88,7 @@ private fun HomePage(isAccessibilityServiceEnabled: MutableState<Boolean>) {
     val intervalTime = remember { mutableStateOf("60000") }
     val isRandomInterval = remember { mutableStateOf(false) }
     val randomIntervalValue = remember { mutableStateOf("30000") }
+    val showDaraFilterUserName = remember { mutableStateOf("") }
 
     LaunchedEffect(startState) {
         scope.launch {
@@ -96,6 +98,7 @@ private fun HomePage(isAccessibilityServiceEnabled: MutableState<Boolean>) {
             intervalTime.value = DataStoreUtils.getSyncData(DataKey.LOG_INTERVAL_TIME, "60000")
             isRandomInterval.value = DataStoreUtils.getSyncData(DataKey.LOG_IS_INTERVAL_TIME_RANDOM_RANGE, false)
             randomIntervalValue.value = DataStoreUtils.getSyncData(DataKey.LOG_INTERVAL_TIME_RANDOM_RANGE, "30000")
+            showDaraFilterUserName.value = DataStoreUtils.getSyncData(DataKey.SHOW_DATA_FILTER_USER, "")
             logUserModel.value = DataStoreUtils.getSyncData(DataKey.LOG_USER_MODE, LogSettingMode.Multiple.name).toLogUserMode() ?: LogSettingMode.Multiple
         }
     }
@@ -114,7 +117,7 @@ private fun HomePage(isAccessibilityServiceEnabled: MutableState<Boolean>) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (isAccessibilityServiceEnabled.value) {
-            HomeSettingContent(logUserModel, userNameList, intervalTime, isRandomInterval, randomIntervalValue)
+            HomeSettingContent(logUserModel, userNameList, intervalTime, isRandomInterval, randomIntervalValue, showDaraFilterUserName)
         }
 
         OutlinedButton (
@@ -139,6 +142,9 @@ private fun HomePage(isAccessibilityServiceEnabled: MutableState<Boolean>) {
                         DataStoreUtils.putSyncData(DataKey.LOG_INTERVAL_TIME, intervalTime.value)
                         DataStoreUtils.putSyncData(DataKey.LOG_IS_INTERVAL_TIME_RANDOM_RANGE, isRandomInterval.value)
                         DataStoreUtils.putSyncData(DataKey.LOG_INTERVAL_TIME_RANDOM_RANGE, randomIntervalValue.value)
+                        DataStoreUtils.putSyncData(DataKey.SHOW_DATA_FILTER_USER, showDaraFilterUserName.value)
+
+                        Constants.showDataFilterUserName = showDaraFilterUserName.value
 
                         withContext(Dispatchers.Main) {
                             OverManager.show(

@@ -44,7 +44,8 @@ fun HomeSettingContent(
     userNameList: SnapshotStateList<String>,
     intervalTime: MutableState<String>,
     isRandomInterval: MutableState<Boolean>,
-    randomIntervalValue: MutableState<String>
+    randomIntervalValue: MutableState<String>,
+    showDaraFilterUserName: MutableState<String>,
 ) {
     var isShowMoreSetting by remember { mutableStateOf(false) }
 
@@ -129,6 +130,21 @@ fun HomeSettingContent(
                         keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                     )
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = showDaraFilterUserName.value,
+                    onValueChange = {
+                        showDaraFilterUserName.value = it
+                        Constants.showDataFilterUserName = it
+                    },
+                    singleLine = true,
+                    label = {
+                        Text(text = "查看数据时筛选用户名")
+                    },
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text),
+                )
             }
         }
     }
