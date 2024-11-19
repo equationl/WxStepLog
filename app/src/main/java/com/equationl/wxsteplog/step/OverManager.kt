@@ -16,7 +16,6 @@ import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.databinding.EmptyItemBinding
 import com.equationl.wxsteplog.databinding.ViewMainOverBinding
 import com.equationl.wxsteplog.db.DbUtil
-import com.equationl.wxsteplog.model.LogSettingMode
 import com.equationl.wxsteplog.model.WxStepLogSetting
 import com.equationl.wxsteplog.util.DateTimeUtil
 import com.equationl.wxsteplog.util.ResolveDataUtil
@@ -80,12 +79,12 @@ object OverManager : StepListener {
                 }
                 beginStart(this)
 
-                if (setting!!.logUserMode == LogSettingMode.Multiple && setting!!.userNameList.size == 1) {
-                    StepManager.execute(LogWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!)
-                }
-                else {
+//                if (setting!!.logUserMode == LogSettingMode.Multiple && setting!!.userNameList.size == 1) {
+//                    StepManager.execute(LogWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!)
+//                }
+//                else {
                     StepManager.execute(LogMultipleWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!)
-                }
+//                }
             }
 
             btnFindUserName.setOnClickListener {

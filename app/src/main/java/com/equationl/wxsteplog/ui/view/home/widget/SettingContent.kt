@@ -46,6 +46,7 @@ fun HomeSettingContent(
     isRandomInterval: MutableState<Boolean>,
     randomIntervalValue: MutableState<String>,
     showDaraFilterUserName: MutableState<String>,
+    isAllModelSpecialUser: MutableState<Boolean>,
 ) {
     var isShowMoreSetting by remember { mutableStateOf(false) }
 
@@ -73,6 +74,31 @@ fun HomeSettingContent(
         if (logUserModel.value == LogSettingMode.Multiple) {
             Spacer(modifier = Modifier.height(8.dp))
             UserInputContent(userNameList)
+        }
+
+        // TODO
+        if (logUserModel.value == LogSettingMode.All) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Switch(isAllModelSpecialUser.value, onCheckedChange = { isAllModelSpecialUser.value = it})
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("特别关注用户")
+            }
+            AnimatedVisibility(
+                visible = isAllModelSpecialUser.value
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    UserInputContent(userNameList)
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))

@@ -87,6 +87,7 @@ private fun HomePage(isAccessibilityServiceEnabled: MutableState<Boolean>) {
     val userNameList = remember { mutableStateListOf<String>() }
     val intervalTime = remember { mutableStateOf("60000") }
     val isRandomInterval = remember { mutableStateOf(false) }
+    val isAllModelSpecialUser = remember { mutableStateOf(false) }
     val randomIntervalValue = remember { mutableStateOf("30000") }
     val showDaraFilterUserName = remember { mutableStateOf("") }
 
@@ -97,6 +98,7 @@ private fun HomePage(isAccessibilityServiceEnabled: MutableState<Boolean>) {
             userNameList.addAll(userNameListString.fromJsonList(String::class.java))
             intervalTime.value = DataStoreUtils.getSyncData(DataKey.LOG_INTERVAL_TIME, "60000")
             isRandomInterval.value = DataStoreUtils.getSyncData(DataKey.LOG_IS_INTERVAL_TIME_RANDOM_RANGE, false)
+            isAllModelSpecialUser.value = DataStoreUtils.getSyncData(DataKey.LOG_IS_ALL_WITH_SPECIAL_USER, false)
             randomIntervalValue.value = DataStoreUtils.getSyncData(DataKey.LOG_INTERVAL_TIME_RANDOM_RANGE, "30000")
             showDaraFilterUserName.value = DataStoreUtils.getSyncData(DataKey.SHOW_DATA_FILTER_USER, "")
             logUserModel.value = DataStoreUtils.getSyncData(DataKey.LOG_USER_MODE, LogSettingMode.Multiple.name).toLogUserMode() ?: LogSettingMode.Multiple
@@ -117,13 +119,16 @@ private fun HomePage(isAccessibilityServiceEnabled: MutableState<Boolean>) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (isAccessibilityServiceEnabled.value) {
-            HomeSettingContent(logUserModel, userNameList, intervalTime, isRandomInterval, randomIntervalValue, showDaraFilterUserName)
+            HomeSettingContent(logUserModel, userNameList, intervalTime, isRandomInterval, randomIntervalValue, showDaraFilterUserName, isAllModelSpecialUser)
         }
 
         OutlinedButton (
             onClick = {
                 if (Assists.isAccessibilityServiceEnabled()) {
-                    if (logUserModel.value == LogSettingMode.Multiple && userNameList.none { it.isNotBlank() }) {
+                    if (
+                        (logUserModel.value == LogSettingMode.Multiple || (logUserModel.value == LogSettingMode.All && isAllModelSpecialUser.value)) &&
+                        userNameList.none { it.isNotBlank() }
+                    ) {
                         Toast.makeText(context, "请至少添加一个要查找的用户名！", Toast.LENGTH_SHORT).show()
                         return@OutlinedButton
                     }
@@ -142,18 +147,21 @@ private fun HomePage(isAccessibilityServiceEnabled: MutableState<Boolean>) {
                         DataStoreUtils.putSyncData(DataKey.LOG_INTERVAL_TIME, intervalTime.value)
                         DataStoreUtils.putSyncData(DataKey.LOG_IS_INTERVAL_TIME_RANDOM_RANGE, isRandomInterval.value)
                         DataStoreUtils.putSyncData(DataKey.LOG_INTERVAL_TIME_RANDOM_RANGE, randomIntervalValue.value)
+                        DataStoreUtils.putSyncData(DataKey.LOG_IS_ALL_WITH_SPECIAL_USER, isAllModelSpecialUser.value)
                         DataStoreUtils.putSyncData(DataKey.SHOW_DATA_FILTER_USER, showDaraFilterUserName.value)
 
                         Constants.showDataFilterUserName = showDaraFilterUserName.value
 
                         withContext(Dispatchers.Main) {
+                            // TODO
                             OverManager.show(
                                 WxStepLogSetting(
                                     userNameList = userNameList.toList(),
                                     logUserMode = logUserModel.value,
                                     intervalTime = intervalTime.value.toLong(),
                                     isRandomInterval = isRandomInterval.value,
-                                    randomIntervalValue = randomIntervalValue.value.toLong()
+                                    randomIntervalValue = randomIntervalValue.value.toLong(),
+                                    isAllModelSpecialUser = isAllModelSpecialUser.value
                                 )
                             )
                         }

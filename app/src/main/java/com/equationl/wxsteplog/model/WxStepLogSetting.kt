@@ -6,4 +6,5 @@ data class WxStepLogSetting(
     val intervalTime: Long,
     val isRandomInterval: Boolean,
     val randomIntervalValue: Long,
+    val isAllModelSpecialUser: Boolean
 )

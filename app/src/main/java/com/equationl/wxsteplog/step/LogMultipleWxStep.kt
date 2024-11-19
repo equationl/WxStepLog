@@ -22,11 +22,13 @@ import com.ven.assists.stepper.Step
 import com.ven.assists.stepper.StepCollector
 import com.ven.assists.stepper.StepImpl
 import kotlinx.coroutines.delay
+import kotlin.math.abs
 
 class LogMultipleWxStep : StepImpl() {
     companion object {
         private const val TARGET_PACKAGE_NAME = "com.tencent.mm"
         private const val TAG = "LogMultipleWxStep"
+        private const val SIMILARITY_THRESHOLD = 50
     }
 
     override fun onImpl(collector: StepCollector) {
@@ -153,19 +155,24 @@ class LogMultipleWxStep : StepImpl() {
             }
 
             val alreadyLogNameList = mutableListOf<String>()
+            /** 是否需要记录所有的列表数据 */
+            val isNeedLogAllList = setting.logUserMode == LogSettingMode.All
+            /** 是否需要进入指定用户的详情中记录 */
+            val isNeedEnterDetail = setting.logUserMode == LogSettingMode.Multiple || (setting.logUserMode == LogSettingMode.All && setting.isAllModelSpecialUser)
 
             while (true) {
                 for (item in listChildren) {
                     if (item?.viewIdResourceName == idModel.itemParentId) {
                         val orderText = item.findById(idModel.itemOrderId).firstOrNull()?.text
-                        val nameText = item.findById(idModel.itemNameId).firstOrNull()?.text
+                        val nameNode = item.findById(idModel.itemNameId).firstOrNull()
+                        val nameText = nameNode?.text
                         val stepText = item.findById(idModel.itemStepId).firstOrNull()?.text
                         val likeText = item.findById(idModel.itemLikeId).firstOrNull()?.text
 
                         OverManager.log("查找到数据，排名：$orderText, 名称：$nameText, 步数：$stepText, 点赞: $likeText")
 
                         if (!orderText.isNullOrBlank() && !nameText.isNullOrBlank() && !stepText.isNullOrBlank() && !likeText.isNullOrBlank()) {
-                            if (setting.logUserMode == LogSettingMode.Multiple) {
+                            if (!isNeedLogAllList) {
                                 if (!setting.userNameList.contains(nameText.toString())) {
                                     OverManager.log("当前用户 $nameText 不在需要记录的列表中，忽略本次记录")
                                     continue
@@ -176,15 +183,36 @@ class LogMultipleWxStep : StepImpl() {
                                 continue
                             }
 
-                            // save data
-                            DbUtil.saveData(
-                                stepNum = stepText.toString().toIntOrNull(),
-                                likeNum = likeText.toString().toIntOrNull(),
-                                userName = nameText.toString(),
-                                userOrder = orderText.toString().toIntOrNull(),
-                                logUserMode = if (setting.logUserMode == LogSettingMode.Multiple) LogModel.Multiple else LogModel.ALL,
-                            )
-                            alreadyLogNameList.add(nameText.toString())
+                            if (!isNeedLogAllList && alreadyLogNameList.size == setting.userNameList.size) {
+                                OverManager.log("已记录所有需要用户，返回")
+                                Assists.back()
+                                val delay = Utils.getIntervalTime(setting)
+                                OverManager.log("间隔 $delay ms 后继续")
+                                delay(delay)
+                                OverManager.log("间隔时间到，继续记录")
+                                return@next Step.get(StepTag.STEP_4, data = setting)
+                            }
+
+                            if (isNeedEnterDetail && setting.userNameList.contains(nameText.toString())) {
+                                OverManager.log("当前用户 $nameText 需要记录详情，进入详情页")
+                                val result = getFromDetail(nameNode, orderText.toString().toIntOrNull())
+                                if (result) {
+                                    alreadyLogNameList.add(nameText.toString())
+                                    OverManager.log("已记录 $nameText 的详情数据，返回列表")
+                                    Assists.back()
+                                }
+                            }
+                            else {
+                                // save data
+                                DbUtil.saveData(
+                                    stepNum = stepText.toString().toIntOrNull(),
+                                    likeNum = likeText.toString().toIntOrNull(),
+                                    userName = nameText.toString(),
+                                    userOrder = orderText.toString().toIntOrNull(),
+                                    logUserMode = if (setting.logUserMode == LogSettingMode.Multiple) LogModel.Multiple else LogModel.ALL,
+                                )
+                                alreadyLogNameList.add(nameText.toString())
+                            }
                         }
                         else {
                             OverManager.log("数据不完整，忽略本次记录")
@@ -265,6 +293,57 @@ class LogMultipleWxStep : StepImpl() {
 //            listView = Assists.findByTags("androidx.recyclerview.widget.RecyclerView")
 //        }
         return listView
+    }
+
+    private suspend fun getFromDetail(nameNode: AccessibilityNodeInfo, userOrder: Int?, isClick: Boolean = true): Boolean {
+        if (isClick) {
+            OverManager.log("点击【${nameNode.text}】")
+            nameNode.findFirstParentClickable()?.click()
+        }
+
+        delay(1000)
+        val nodes = Assists.getAllNodes()
+
+        if (nodes.find { it.text == "正在加载"} != null) {
+            OverManager.log("正在加载中，等待……")
+            getFromDetail(nameNode, userOrder, false)
+        }
+
+        val findKeyNode = nodes.find { it.text == "步数" }
+        if (findKeyNode == null) {
+            OverManager.log("没有找到步数关键数据，忽略本次记录")
+            return false
+        }
+
+        val dataList = mutableListOf<AccessibilityNodeInfo>()
+        val keyNodeBound = findKeyNode.getBoundsInScreen()
+        for (node in nodes) {
+            val nodeBound = node.getBoundsInScreen()
+            if (abs(nodeBound.top - keyNodeBound.top) < SIMILARITY_THRESHOLD) {
+                dataList.add(node)
+            }
+        }
+
+        dataList.removeIf { it.className !=  "android.widget.TextView" || it.text.toString().toIntOrNull() == null}
+        dataList.sortBy { it.getBoundsInScreen().left }
+
+        if (dataList.size != 2) {
+            OverManager.log("查找的数据不完整，忽略本次记录")
+            Assists.back()
+            return false
+        }
+
+        OverManager.log("查找到数据，步数：${dataList[0].text}, 点赞: ${dataList[1].text}")
+        // save data
+        DbUtil.saveData(
+            stepNum = dataList[0].text.toString().toIntOrNull(),
+            likeNum = dataList[1].text.toString().toIntOrNull(),
+            userName = nameNode.text.toString(),
+            userOrder = userOrder,
+            logUserMode = LogModel.Single
+        )
+
+        return true
     }
 
 }
