@@ -1,7 +1,6 @@
 package com.equationl.wxsteplog.step
 
 import android.annotation.SuppressLint
-import android.icu.util.TimeZone
 import android.view.LayoutInflater
 import android.view.View
 import androidx.core.view.isVisible
@@ -202,11 +201,11 @@ object OverManager : StepListener {
     private fun loadStepListData() {
         CoroutineScope(Dispatchers.IO).launch {
             val showRange = DateTimeUtil.getCurrentDayRange()
-            val offset = TimeZone.getDefault().rawOffset
+            // val offset = TimeZone.getDefault().rawOffset
             val rawDataList = if (isFilterUser && Constants.showDataFilterUserName.isNotBlank())
-                dao.queryRangeDataListByUserName(showRange.start - offset, showRange.end - offset, Constants.showDataFilterUserName, 1, Int.MAX_VALUE)
+                dao.queryRangeDataListByUserName(showRange.start, showRange.end, Constants.showDataFilterUserName, 1, Int.MAX_VALUE)
             else
-                dao.queryRangeDataList(showRange.start - offset, showRange.end - offset, 1, Int.MAX_VALUE)
+                dao.queryRangeDataList(showRange.start, showRange.end, 1, Int.MAX_VALUE)
 
             val resolveData = ResolveDataUtil.rawDataToStaticsModel(rawDataList, isFoldData)
             withContext(Dispatchers.Main) {
