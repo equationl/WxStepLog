@@ -172,6 +172,16 @@ class LogMultipleWxStep : StepImpl() {
                         OverManager.log("查找到数据，排名：$orderText, 名称：$nameText, 步数：$stepText, 点赞: $likeText")
 
                         if (!orderText.isNullOrBlank() && !nameText.isNullOrBlank() && !stepText.isNullOrBlank() && !likeText.isNullOrBlank()) {
+                            if (!isNeedLogAllList && alreadyLogNameList.size == setting.userNameList.size) {
+                                OverManager.log("已记录所有需要用户，返回")
+                                Assists.back()
+                                val delay = Utils.getIntervalTime(setting)
+                                OverManager.log("间隔 $delay ms 后继续")
+                                delay(delay)
+                                OverManager.log("间隔时间到，继续记录")
+                                return@next Step.get(StepTag.STEP_4, data = setting)
+                            }
+
                             if (!isNeedLogAllList) {
                                 if (!setting.userNameList.contains(nameText.toString())) {
                                     OverManager.log("当前用户 $nameText 不在需要记录的列表中，忽略本次记录")
@@ -183,16 +193,6 @@ class LogMultipleWxStep : StepImpl() {
                                 continue
                             }
 
-                            if (!isNeedLogAllList && alreadyLogNameList.size == setting.userNameList.size) {
-                                OverManager.log("已记录所有需要用户，返回")
-                                Assists.back()
-                                val delay = Utils.getIntervalTime(setting)
-                                OverManager.log("间隔 $delay ms 后继续")
-                                delay(delay)
-                                OverManager.log("间隔时间到，继续记录")
-                                return@next Step.get(StepTag.STEP_4, data = setting)
-                            }
-
                             if (isNeedEnterDetail && setting.userNameList.contains(nameText.toString())) {
                                 OverManager.log("当前用户 $nameText 需要记录详情，进入详情页")
                                 val result = getFromDetail(nameNode, orderText.toString().toIntOrNull())
@@ -200,6 +200,7 @@ class LogMultipleWxStep : StepImpl() {
                                     alreadyLogNameList.add(nameText.toString())
                                     OverManager.log("已记录 $nameText 的详情数据，返回列表")
                                     Assists.back()
+                                    delay(1000)
                                 }
                             }
                             else {
