@@ -1,7 +1,6 @@
 package com.equationl.wxsteplog.step
 
 import android.annotation.SuppressLint
-import android.icu.util.TimeZone
 import android.view.LayoutInflater
 import android.view.View
 import androidx.core.view.isVisible
@@ -16,7 +15,6 @@ import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.databinding.EmptyItemBinding
 import com.equationl.wxsteplog.databinding.ViewMainOverBinding
 import com.equationl.wxsteplog.db.DbUtil
-import com.equationl.wxsteplog.model.LogSettingMode
 import com.equationl.wxsteplog.model.WxStepLogSetting
 import com.equationl.wxsteplog.util.DateTimeUtil
 import com.equationl.wxsteplog.util.ResolveDataUtil
@@ -80,12 +78,12 @@ object OverManager : StepListener {
                 }
                 beginStart(this)
 
-                if (setting!!.logUserMode == LogSettingMode.Multiple && setting!!.userNameList.size == 1) {
-                    StepManager.execute(LogWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!)
-                }
-                else {
+//                if (setting!!.logUserMode == LogSettingMode.Multiple && setting!!.userNameList.size == 1) {
+//                    StepManager.execute(LogWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!)
+//                }
+//                else {
                     StepManager.execute(LogMultipleWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!)
-                }
+//                }
             }
 
             btnFindUserName.setOnClickListener {
@@ -203,11 +201,11 @@ object OverManager : StepListener {
     private fun loadStepListData() {
         CoroutineScope(Dispatchers.IO).launch {
             val showRange = DateTimeUtil.getCurrentDayRange()
-            val offset = TimeZone.getDefault().rawOffset
+            // val offset = TimeZone.getDefault().rawOffset
             val rawDataList = if (isFilterUser && Constants.showDataFilterUserName.isNotBlank())
-                dao.queryRangeDataListByUserName(showRange.start - offset, showRange.end - offset, Constants.showDataFilterUserName, 1, Int.MAX_VALUE)
+                dao.queryRangeDataListByUserName(showRange.start, showRange.end, Constants.showDataFilterUserName, 1, Int.MAX_VALUE)
             else
-                dao.queryRangeDataList(showRange.start - offset, showRange.end - offset, 1, Int.MAX_VALUE)
+                dao.queryRangeDataList(showRange.start, showRange.end, 1, Int.MAX_VALUE)
 
             val resolveData = ResolveDataUtil.rawDataToStaticsModel(rawDataList, isFoldData)
             withContext(Dispatchers.Main) {
