@@ -160,7 +160,14 @@ class LogMultipleWxStep : StepImpl() {
             /** 是否需要进入指定用户的详情中记录 */
             val isNeedEnterDetail = setting.logUserMode == LogSettingMode.Multiple || (setting.logUserMode == LogSettingMode.All && setting.isAllModelSpecialUser)
 
+            var runningErrorCount = 0
+
             while (true) {
+                if (runningErrorCount > 5) {
+                    OverManager.log("累计错误达 $runningErrorCount 次，跳出循环读取")
+                    break
+                }
+
                 for (item in listChildren) {
                     if (item?.viewIdResourceName == idModel.itemParentId) {
                         val orderText = item.findById(idModel.itemOrderId).firstOrNull()?.text
@@ -220,6 +227,7 @@ class LogMultipleWxStep : StepImpl() {
                         }
                     }
                     else {
+                        runningErrorCount++
                         OverManager.log("未查找到列表项数据，忽略本次记录")
                     }
                 }
@@ -248,8 +256,8 @@ class LogMultipleWxStep : StepImpl() {
                 listChildren = listView.getChildren()
             }
 
-            OverManager.log("运行异常，重复查找")
-            return@next Step.repeat
+            OverManager.log("运行异常，返回上一步")
+            return@next Step.get(StepTag.STEP_4, data = setting)
         }
     }
 
