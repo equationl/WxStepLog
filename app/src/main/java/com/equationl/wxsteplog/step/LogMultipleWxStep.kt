@@ -250,6 +250,7 @@ class LogMultipleWxStep : StepImpl() {
                 // 这里需要重新拿一下 listview 对象，不然不知道为什么 listView.getChildren() 返回的不是完整数据
                 listView = getListView()
                 if (listView == null) {
+                    runningErrorCount++
                     OverManager.log("没有查找到数据，忽略本页")
                     continue
                 }
