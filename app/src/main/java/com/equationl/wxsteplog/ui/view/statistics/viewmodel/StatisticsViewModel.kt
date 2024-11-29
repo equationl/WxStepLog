@@ -102,61 +102,107 @@ class StatisticsViewModel @Inject constructor(
         return intent
     }
 
-    fun exportData(result: ActivityResult, context: Context, filter: StatisticsFilter?) {
+    fun exportData(
+        result: ActivityResult,
+        context: Context,
+        filter: StatisticsFilter?,
+        onFinish: () -> Unit,
+        onProgress: (progress: Float) -> Unit
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
             val data = result.data
             val uri = data?.data
-            uri?.let {
-                context.contentResolver.openOutputStream(it)?.let { outputStream ->
-                    LogUtil.i("el", "export with filter: $filter")
-                    val dataList = if (filter == null) {
-                        db.manHoursDB().queryAllData()
-                    } else {
-                        val offset = TimeZone.getDefault().rawOffset
-                        if (filter.isFilterUser && filter.user != null)
-                            db.manHoursDB().queryRangeDataListByUserName(_uiState.value.filter.showRange.start - offset, _uiState.value.filter.showRange.end - offset, filter.user, 1, Int.MAX_VALUE)
-                        else
-                            db.manHoursDB().queryRangeDataList(_uiState.value.filter.showRange.start - offset, _uiState.value.filter.showRange.end - offset, 1, Int.MAX_VALUE)
-                    }
-
-                    for (row in dataList) {
-                        outputStream.write("${row.id},${row.userName},${row.stepNum},${row.likeNum},${row.logTimeString},${row.logTime},${row.userOrder},${row.logModel}\n".toByteArray())
-                    }
-                    outputStream.flush()
-                    outputStream.close()
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "导出完成！", Toast.LENGTH_SHORT).show()
-                    }
+            if (uri == null) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "导出错误：uri is null", Toast.LENGTH_SHORT).show()
+                    onFinish()
                 }
+
+                return@launch
             }
+
+            val outputStream = context.contentResolver.openOutputStream(uri)
+            if (outputStream == null) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "导出错误：outputStream is null", Toast.LENGTH_SHORT).show()
+                    onFinish()
+                }
+
+                return@launch
+            }
+
+            LogUtil.i("el", "export with filter: $filter")
+            val dataList = if (filter == null) {
+                db.manHoursDB().queryAllData()
+            } else {
+                // TODO 这里似乎不需要偏移
+                val offset = TimeZone.getDefault().rawOffset
+                if (filter.isFilterUser && filter.user != null)
+                    db.manHoursDB().queryRangeDataListByUserName(_uiState.value.filter.showRange.start - offset, _uiState.value.filter.showRange.end - offset, filter.user, 1, Int.MAX_VALUE)
+                else
+                    db.manHoursDB().queryRangeDataList(_uiState.value.filter.showRange.start - offset, _uiState.value.filter.showRange.end - offset, 1, Int.MAX_VALUE)
+            }
+
+            dataList.forEachIndexed { index, row ->
+                outputStream.write("${row.id},${row.userName},${row.stepNum},${row.likeNum},${row.logTimeString},${row.logTime},${row.userOrder},${row.logModel}\n".toByteArray())
+                onProgress((index + 1).toFloat() / dataList.size)
+            }
+            outputStream.flush()
+            outputStream.close()
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "导出完成！", Toast.LENGTH_SHORT).show()
+                onFinish()
+            }
+
         }
     }
 
-    fun onImport(result: ActivityResult, context: Context) {
+    fun onImport(
+        result: ActivityResult,
+        context: Context,
+        onFinish: () -> Unit,
+        onProgress: (readLines: Int) -> Unit
+    ) {
         val data = result.data
         val uri = data?.data
 
-        var hasConflict = false
+        var hasConflict: Boolean
 
-        uri?.let {
-            viewModelScope.launch(Dispatchers.IO) {
-                val buffer = context.contentResolver.openInputStream(it)?.bufferedReader()
-                buffer?.useLines {
-                    hasConflict = ResolveDataUtil.importDataFromCsv(it, db)
-                }
-
-                withContext(Dispatchers.Main) {
-                    if (hasConflict) {
-                        Toast.makeText(context, "导入完成，但是部分数据由于某些错误没有导入", Toast.LENGTH_LONG).show()
-                    }
-                    else {
-                        Toast.makeText(context, "导入成功", Toast.LENGTH_SHORT).show()
-                    }
-                }
-
-                loadData()
-            }
+        if (uri == null) {
+            Toast.makeText(context, "导入错误：uri is null", Toast.LENGTH_SHORT).show()
+            onFinish()
+            return
         }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val buffer = context.contentResolver.openInputStream(uri)?.bufferedReader()
+
+            if (buffer == null) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "导入错误：buffer is null", Toast.LENGTH_SHORT).show()
+                    onFinish()
+                }
+                return@launch
+            }
+
+            buffer.useLines {
+                hasConflict = ResolveDataUtil.importDataFromCsv(it, db, onProgress)
+            }
+
+            withContext(Dispatchers.Main) {
+                if (hasConflict) {
+                    Toast.makeText(context, "导入完成，但是部分数据由于某些错误没有导入", Toast.LENGTH_LONG).show()
+                    onFinish()
+                }
+                else {
+                    Toast.makeText(context, "导入成功", Toast.LENGTH_SHORT).show()
+                    onFinish()
+                }
+            }
+
+            loadData()
+        }
+
     }
 
     fun onChangeFilter(newFilter: StatisticsFilter) {

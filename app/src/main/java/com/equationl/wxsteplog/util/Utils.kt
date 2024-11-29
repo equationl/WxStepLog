@@ -8,6 +8,8 @@ import android.text.SpannableStringBuilder
 import android.util.Log
 import androidx.compose.ui.graphics.Color
 import com.equationl.wxsteplog.model.WxStepLogSetting
+import kotlin.math.pow
+import kotlin.math.roundToInt
 import kotlin.random.Random
 
 object Utils {
@@ -52,5 +54,15 @@ object Utils {
         val difference = if (setting.isRandomInterval) (0..setting.randomIntervalValue).random() else 0
         val flag = listOf(-1, 1).random()
         return setting.intervalTime + difference * flag
+    }
+
+    fun Double.round(decimals: Int): Double {
+        val factor = 10.0.pow(decimals)
+        return (this * factor).roundToInt() / factor
+    }
+
+    fun Float.round(decimals: Int): Double {
+        val factor = 10.0.pow(decimals)
+        return (this * factor).roundToInt() / factor
     }
 }

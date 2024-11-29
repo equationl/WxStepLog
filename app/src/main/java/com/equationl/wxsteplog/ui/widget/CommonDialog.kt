@@ -1,6 +1,7 @@
 package com.equationl.wxsteplog.ui.widget
 
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,10 +10,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,6 +31,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.equationl.wxsteplog.step.OverManager
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowRange
 import com.equationl.wxsteplog.util.DateTimeUtil
@@ -92,6 +98,33 @@ fun DateTimeRangePickerDialog(
             headline = null,
             title = null
         )
+    }
+}
+
+@Composable
+fun LoadingDialog(
+    content: String,
+    onDismissRequest: () -> Unit
+) {
+
+    Dialog(
+        onDismissRequest = onDismissRequest,
+        DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+    ) {
+        Column(
+            modifier = Modifier
+                .sizeIn(minWidth = 200.dp, minHeight = 200.dp)
+                .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(8.dp))
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            CircularProgressIndicator()
+            if (content.isNotBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Text(content)
+            }
+        }
     }
 }
 

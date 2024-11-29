@@ -87,7 +87,9 @@ import com.equationl.wxsteplog.ui.widget.ExportConfirmDialog
 import com.equationl.wxsteplog.ui.widget.LineSeriesChart
 import com.equationl.wxsteplog.ui.widget.ListEmptyContent
 import com.equationl.wxsteplog.ui.widget.LoadingContent
+import com.equationl.wxsteplog.ui.widget.LoadingDialog
 import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
+import com.equationl.wxsteplog.util.Utils.round
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,17 +99,44 @@ fun StatisticsScreen(viewModel: StatisticsViewModel = hiltViewModel()) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var isShowExportDialog by remember { mutableStateOf(false) }
+    var isShowLoading by remember { mutableStateOf(false) }
+    var loadingDialogContent by remember { mutableStateOf("") }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        viewModel.exportData(result, context, if (Constants.isExportWithFilter) state.filter else null)
+        loadingDialogContent = "导出中..."
+        isShowLoading = true
+        viewModel.exportData(
+            result,
+            context,
+            if (Constants.isExportWithFilter) state.filter else null,
+            onFinish = {
+                isShowLoading = false
+                loadingDialogContent = ""
+            },
+            onProgress = {
+                loadingDialogContent = "导出中... ${(it*100).round(2)}%"
+            }
+        )
     }
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        viewModel.onImport(result, context)
+        loadingDialogContent = "导入中..."
+        isShowLoading = true
+        viewModel.onImport(
+            result,
+            context,
+            onFinish = {
+                isShowLoading = false
+                loadingDialogContent = ""
+            },
+            onProgress = {
+                loadingDialogContent = "导入中... \n 已处理 $it 条数据"
+            }
+        )
     }
 
     val isListScroll by remember{
@@ -209,6 +238,12 @@ fun StatisticsScreen(viewModel: StatisticsViewModel = hiltViewModel()) {
                 isShowExportDialog = false
             }
         )
+    }
+
+    if (isShowLoading) {
+        LoadingDialog(loadingDialogContent) {
+            isShowLoading = false
+        }
     }
 
 }

@@ -84,11 +84,17 @@ object ResolveDataUtil {
 
     suspend fun importDataFromCsv(
         csvLines: Sequence<String>,
-        db: WxStepDB
+        db: WxStepDB,
+        onProgress: (readLines: Int) -> Unit
     ): Boolean {
         var hasConflict = false
+        var index = 0
 
         for (line in csvLines) {
+            index++
+            onProgress(index)
+
+
             if (line.isBlank()) {
                 Log.w(TAG, "importDataFromCsv: line is blank!")
                 continue
