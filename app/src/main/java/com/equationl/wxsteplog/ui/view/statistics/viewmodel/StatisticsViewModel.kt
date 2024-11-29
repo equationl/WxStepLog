@@ -135,12 +135,11 @@ class StatisticsViewModel @Inject constructor(
             val dataList = if (filter == null) {
                 db.manHoursDB().queryAllData()
             } else {
-                // TODO 这里似乎不需要偏移
-                val offset = TimeZone.getDefault().rawOffset
+                // val offset = TimeZone.getDefault().rawOffset
                 if (filter.isFilterUser && filter.user != null)
-                    db.manHoursDB().queryRangeDataListByUserName(_uiState.value.filter.showRange.start - offset, _uiState.value.filter.showRange.end - offset, filter.user, 1, Int.MAX_VALUE)
+                    db.manHoursDB().queryRangeDataListByUserName(_uiState.value.filter.showRange.start, _uiState.value.filter.showRange.end, filter.user, 1, Int.MAX_VALUE)
                 else
-                    db.manHoursDB().queryRangeDataList(_uiState.value.filter.showRange.start - offset, _uiState.value.filter.showRange.end - offset, 1, Int.MAX_VALUE)
+                    db.manHoursDB().queryRangeDataList(_uiState.value.filter.showRange.start, _uiState.value.filter.showRange.end, 1, Int.MAX_VALUE)
             }
 
             dataList.forEachIndexed { index, row ->
