@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.equationl.wxsteplog.db.DbUtil.DATABASE_FILE_NAME
 import com.equationl.wxsteplog.db.WxStepDB
 import com.equationl.wxsteplog.db.WxStepTable
 import com.equationl.wxsteplog.model.StaticsScreenModel
@@ -92,6 +93,18 @@ class StatisticsViewModel @Inject constructor(
         return intent
     }
 
+    fun createNewDatabaseFileIntent(): Intent {
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/octet-stream"
+            putExtra(Intent.EXTRA_TITLE, "wxStepLog_${System.currentTimeMillis().formatDateTime("yyyy_MM_dd_HH_mm_ss")}.db")
+        }
+        intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        intent.setFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+        intent.setFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        return intent
+    }
+
     fun createReadDocumentIntent(): Intent {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
@@ -153,6 +166,45 @@ class StatisticsViewModel @Inject constructor(
                 onFinish()
             }
 
+        }
+    }
+
+    fun exportDataToDb(
+        result: ActivityResult,
+        context: Context,
+        onFinish: () -> Unit,
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val data = result.data
+            val uri = data?.data
+            if (uri == null) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "导出错误：uri is null", Toast.LENGTH_SHORT).show()
+                    onFinish()
+                }
+
+                return@launch
+            }
+
+            val outputStream = context.contentResolver.openOutputStream(uri)
+            if (outputStream == null) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "导出错误：outputStream is null", Toast.LENGTH_SHORT).show()
+                    onFinish()
+                }
+
+                return@launch
+            }
+
+            val dataBaseFile = context.getDatabasePath(DATABASE_FILE_NAME)
+            outputStream.write(dataBaseFile.readBytes())
+
+            outputStream.flush()
+            outputStream.close()
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "导出完成！", Toast.LENGTH_SHORT).show()
+                onFinish()
+            }
         }
     }
 

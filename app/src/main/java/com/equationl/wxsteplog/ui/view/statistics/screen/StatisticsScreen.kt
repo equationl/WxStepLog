@@ -34,6 +34,7 @@ import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.ImportContacts
 import androidx.compose.material.icons.outlined.InsertChartOutlined
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.TableRows
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -121,6 +122,22 @@ fun StatisticsScreen(viewModel: StatisticsViewModel = hiltViewModel()) {
         )
     }
 
+    val exportDbLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        loadingDialogContent = "导出中..."
+        isShowLoading = true
+
+        viewModel.exportDataToDb(
+            result,
+            context,
+            onFinish = {
+                isShowLoading = false
+                loadingDialogContent = ""
+            },
+        )
+    }
+
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -179,6 +196,10 @@ fun StatisticsScreen(viewModel: StatisticsViewModel = hiltViewModel()) {
                 onImport = {
                     val intent = viewModel.createReadDocumentIntent()
                     importLauncher.launch(intent)
+                },
+                onExportDb = {
+                    val intent = viewModel.createNewDatabaseFileIntent()
+                    exportDbLauncher.launch(intent)
                 }
             )
         },
@@ -258,7 +279,8 @@ private fun TopBar(
     onFilterDateRange: (value: StatisticsShowRange) -> Unit,
     onChangeShowType: () -> Unit,
     onExport: () -> Unit,
-    onImport: () -> Unit
+    onImport: () -> Unit,
+    onExportDb: () -> Unit,
 ) {
     val navController = LocalNavController.current
     var isShowDatePickedDialog by remember { mutableStateOf(false) }
@@ -333,6 +355,10 @@ private fun TopBar(
                 onClickImport = {
                     isExpandMenu = false
                     onImport()
+                },
+                onClickExportDb = {
+                    isExpandMenu = false
+                    onExportDb()
                 }
             )
         }
@@ -354,6 +380,7 @@ private fun TopBarMoreFunction(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
     onClickExport: () -> Unit,
+    onClickExportDb: () -> Unit,
     onClickImport: () -> Unit
 ) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismissRequest) {
@@ -364,6 +391,15 @@ private fun TopBarMoreFunction(
             onClick = onClickExport,
             leadingIcon = {
                 Icon(imageVector = Icons.Outlined.BackupTable, contentDescription = "export")
+            }
+        )
+        DropdownMenuItem(
+            text = {
+                Text(text = "导出所有数据为 .db 文件")
+            },
+            onClick = onClickExportDb,
+            leadingIcon = {
+                Icon(imageVector = Icons.Outlined.TableRows, contentDescription = "export")
             }
         )
         DropdownMenuItem(

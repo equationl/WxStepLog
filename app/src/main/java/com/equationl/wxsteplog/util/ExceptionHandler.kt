@@ -4,6 +4,9 @@ import android.util.Log
 import android.widget.Toast
 import com.equationl.wxsteplog.App
 import com.equationl.wxsteplog.util.log.LogUtil
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class DefaultCrashCatchHandler: Thread.UncaughtExceptionHandler {
     private val TAG = "CrashCatchHandler"
@@ -12,7 +15,9 @@ class DefaultCrashCatchHandler: Thread.UncaughtExceptionHandler {
         try {
             LogUtil.e(TAG, "uncaughtException: 捕获到未处理的异常： ${thread.name}", throwable)
 
-            Toast.makeText(App.instance, throwable.message, Toast.LENGTH_LONG).show()
+            CoroutineScope(Dispatchers.Main).launch {
+                Toast.makeText(App.instance, throwable.message, Toast.LENGTH_LONG).show()
+            }
         } catch (tr: Throwable) {
             Log.e(TAG, "uncaughtException: ", tr)
         }

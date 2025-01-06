@@ -5,6 +5,7 @@ import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.equationl.wxsteplog.db.DbUtil.DATABASE_FILE_NAME
 
 @Database(
     entities = [
@@ -24,7 +25,7 @@ abstract class WxStepDB : RoomDatabase() {
             val databaseBuilder = if (useInMemory) {
                 Room.inMemoryDatabaseBuilder(context, WxStepDB::class.java)
             } else {
-                Room.databaseBuilder(context, WxStepDB::class.java, "wx_step_data.db")
+                Room.databaseBuilder(context, WxStepDB::class.java, DATABASE_FILE_NAME)
             }
             return databaseBuilder
                 //.fallbackToDestructiveMigration()
