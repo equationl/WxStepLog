@@ -5,6 +5,8 @@ import android.content.ComponentName
 import android.content.Intent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.equationl.wxsteplog.constants.Constants
+import com.equationl.wxsteplog.constants.Constants.wxLauncherPkg
+import com.equationl.wxsteplog.constants.Constants.wxPkgName
 import com.ven.assists.Assists
 import com.ven.assists.Assists.click
 import com.ven.assists.Assists.findFirstParentClickable
@@ -18,7 +20,6 @@ import kotlinx.coroutines.delay
 
 class FindUserNameStep : StepImpl() {
     companion object {
-        private const val TARGET_PACKAGE_NAME = "com.tencent.mm"
         private const val TAG = "FindUserNameStep"
 
         private val nameSet = mutableMapOf<String, MutableSet<String>>()
@@ -31,7 +32,7 @@ class FindUserNameStep : StepImpl() {
             Intent().apply {
                 addCategory(Intent.CATEGORY_LAUNCHER)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                component = ComponentName(TARGET_PACKAGE_NAME, "com.tencent.mm.ui.LauncherUI")
+                component = ComponentName(wxPkgName.value, wxLauncherPkg.value)
                 try {
                     Assists.service?.startActivity(this)
                 } catch (e: ActivityNotFoundException) {
@@ -55,7 +56,7 @@ class FindUserNameStep : StepImpl() {
                 }
             }
 
-            if (Assists.getPackageName() == TARGET_PACKAGE_NAME) {
+            if (Assists.getPackageName() == wxPkgName.value) {
                 OverManager.log("没有查找到【通讯录】，但是当前已处于微信 APP 中，返回")
                 Assists.back()
             }

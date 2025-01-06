@@ -102,6 +102,8 @@ private fun HomePage(isAccessibilityServiceEnabled: MutableState<Boolean>) {
             randomIntervalValue.value = DataStoreUtils.getSyncData(DataKey.LOG_INTERVAL_TIME_RANDOM_RANGE, "30000")
             showDaraFilterUserName.value = DataStoreUtils.getSyncData(DataKey.SHOW_DATA_FILTER_USER, "")
             logUserModel.value = DataStoreUtils.getSyncData(DataKey.LOG_USER_MODE, LogSettingMode.Multiple.name).toLogUserMode() ?: LogSettingMode.Multiple
+            Constants.wxPkgName.value = DataStoreUtils.getSyncData(DataKey.WX_PKG_NAME, Constants.wxPkgName.value)
+            Constants.wxLauncherPkg.value = DataStoreUtils.getSyncData(DataKey.WX_LAUNCHER_PKG_NAME, Constants.wxLauncherPkg.value)
         }
     }
 
@@ -149,11 +151,12 @@ private fun HomePage(isAccessibilityServiceEnabled: MutableState<Boolean>) {
                         DataStoreUtils.putSyncData(DataKey.LOG_INTERVAL_TIME_RANDOM_RANGE, randomIntervalValue.value)
                         DataStoreUtils.putSyncData(DataKey.LOG_IS_ALL_WITH_SPECIAL_USER, isAllModelSpecialUser.value)
                         DataStoreUtils.putSyncData(DataKey.SHOW_DATA_FILTER_USER, showDaraFilterUserName.value)
+                        DataStoreUtils.putSyncData(DataKey.WX_PKG_NAME, Constants.wxPkgName.value)
+                        DataStoreUtils.putSyncData(DataKey.WX_LAUNCHER_PKG_NAME, Constants.wxLauncherPkg.value)
 
                         Constants.showDataFilterUserName = showDaraFilterUserName.value
 
                         withContext(Dispatchers.Main) {
-                            // TODO
                             OverManager.show(
                                 WxStepLogSetting(
                                     userNameList = userNameList.toList(),

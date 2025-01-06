@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
 import android.view.accessibility.AccessibilityNodeInfo
+import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.db.DbUtil
 import com.equationl.wxsteplog.model.LogModel
 import com.equationl.wxsteplog.model.LogSettingMode
@@ -26,7 +27,6 @@ import kotlin.math.abs
 
 class LogMultipleWxStep : StepImpl() {
     companion object {
-        private const val TARGET_PACKAGE_NAME = "com.tencent.mm"
         private const val TAG = "LogMultipleWxStep"
         private const val SIMILARITY_THRESHOLD = 50
     }
@@ -39,7 +39,7 @@ class LogMultipleWxStep : StepImpl() {
             Intent().apply {
                 addCategory(Intent.CATEGORY_LAUNCHER)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                component = ComponentName(TARGET_PACKAGE_NAME, "com.tencent.mm.ui.LauncherUI")
+                component = ComponentName(Constants.wxPkgName.value, Constants.wxLauncherPkg.value)
                 try {
                     Assists.service?.startActivity(this)
                 } catch (e: ActivityNotFoundException) {
@@ -59,7 +59,7 @@ class LogMultipleWxStep : StepImpl() {
                 }
             }
 
-            if (Assists.getPackageName() == TARGET_PACKAGE_NAME) {
+            if (Assists.getPackageName() == Constants.wxPkgName.value) {
                 OverManager.log("没有查找到【微信】，但是当前已处于微信 APP 中，返回")
                 Assists.back()
             }
@@ -84,7 +84,7 @@ class LogMultipleWxStep : StepImpl() {
                 }
             }
 
-            if (Assists.getPackageName() == TARGET_PACKAGE_NAME) {
+            if (Assists.getPackageName() == Constants.wxPkgName.value) {
                 OverManager.log("没有查找到【微信运动】，但是当前已处于微信 APP 中，返回")
                 Assists.back()
             }
@@ -108,7 +108,7 @@ class LogMultipleWxStep : StepImpl() {
                 }
             }
 
-            if (Assists.getPackageName() == TARGET_PACKAGE_NAME) {
+            if (Assists.getPackageName() == Constants.wxPkgName.value) {
                 OverManager.log("没有查找到【步数排行榜】，但是当前已处于微信 APP 中，返回")
                 Assists.back()
             }
