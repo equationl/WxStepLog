@@ -25,3 +25,16 @@ interface WxStepDao{
     @Query("SELECT DISTINCT user_name FROM wx_step_table")
     suspend fun getCurrentUserList(): List<String>
 }
+
+
+@Dao
+interface WxStepHistoryDao{
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertData(data: WxStepHistoryTable): Long
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertAllData(data: List<WxStepHistoryTable>): List<Long>
+
+    @Query("SELECT * FROM wx_step_history_table")
+    suspend fun queryAllData(): List<WxStepHistoryTable>
+}

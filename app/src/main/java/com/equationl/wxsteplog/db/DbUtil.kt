@@ -12,7 +12,7 @@ object DbUtil {
     suspend fun saveData(stepNum: Int?, likeNum: Int?, userName: String, userOrder: Int?, logUserMode: LogModel?) {
         val currentTime = System.currentTimeMillis()
 
-        db.manHoursDB().insertData(
+        db.wxStepDB().insertData(
             WxStepTable(
                 userName = userName,
                 stepNum = stepNum,

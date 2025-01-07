@@ -34,7 +34,7 @@ object OverManager : StepListener {
     private var viewMainOver: ViewMainOverBinding? = null
     private var setting: WxStepLogSetting? = null
     private var dataListAdapter: FloatViewStepDataAdapter? = null
-    private var dao = DbUtil.db.manHoursDB()
+    private var dao = DbUtil.db.wxStepDB()
 
     // 统计数据过滤参数
     private var isFilterUser: Boolean = true

@@ -120,7 +120,7 @@ object ResolveDataUtil {
                     userOrder = itemList.getOrNull(6)?.toIntOrNull(),
                     logModel = "${itemList.getOrNull(7) ?: ""},${LogModel.Import}"
                 )
-                val insertResult = db.manHoursDB().insertData(wxStepTable)
+                val insertResult = db.wxStepDB().insertData(wxStepTable)
                 if (insertResult <= 0) {
                     hasConflict = true
                     Log.w(TAG, "importDataFromCsv: insert Data fail, return $insertResult, with data: $wxStepTable")

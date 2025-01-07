@@ -10,12 +10,14 @@ import com.equationl.wxsteplog.db.DbUtil.DATABASE_FILE_NAME
 @Database(
     entities = [
         WxStepTable::class,
+        WxStepHistoryTable::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
-        AutoMigration(from = 2, to = 3)
+        AutoMigration(from = 2, to = 3),
+        AutoMigration(from = 3, to = 4)
     ]
 )
 //@TypeConverters(DBConverters::class)
@@ -33,5 +35,6 @@ abstract class WxStepDB : RoomDatabase() {
         }
     }
 
-    abstract fun manHoursDB(): WxStepDao
+    abstract fun wxStepDB(): WxStepDao
+    abstract fun wxStepHistoryDB(): WxStepHistoryDao
 }

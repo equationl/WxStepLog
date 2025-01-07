@@ -146,13 +146,13 @@ class StatisticsViewModel @Inject constructor(
 
             LogUtil.i("el", "export with filter: $filter")
             val dataList = if (filter == null) {
-                db.manHoursDB().queryAllData()
+                db.wxStepDB().queryAllData()
             } else {
                 // val offset = TimeZone.getDefault().rawOffset
                 if (filter.isFilterUser && filter.user != null)
-                    db.manHoursDB().queryRangeDataListByUserName(_uiState.value.filter.showRange.start, _uiState.value.filter.showRange.end, filter.user, 1, Int.MAX_VALUE)
+                    db.wxStepDB().queryRangeDataListByUserName(_uiState.value.filter.showRange.start, _uiState.value.filter.showRange.end, filter.user, 1, Int.MAX_VALUE)
                 else
-                    db.manHoursDB().queryRangeDataList(_uiState.value.filter.showRange.start, _uiState.value.filter.showRange.end, 1, Int.MAX_VALUE)
+                    db.wxStepDB().queryRangeDataList(_uiState.value.filter.showRange.start, _uiState.value.filter.showRange.end, 1, Int.MAX_VALUE)
             }
 
             dataList.forEachIndexed { index, row ->
@@ -267,7 +267,7 @@ class StatisticsViewModel @Inject constructor(
     private suspend fun loadData(isFirstLoading: Boolean = false) = withContext(Dispatchers.IO) {
         _uiState.update { it.copy(isLoading = true) }
 
-        val userList = db.manHoursDB().getCurrentUserList().sortedWith { o1, o2 -> Collator.getInstance(Locale.CHINESE).compare(o1, o2) }
+        val userList = db.wxStepDB().getCurrentUserList().sortedWith { o1, o2 -> Collator.getInstance(Locale.CHINESE).compare(o1, o2) }
 
         var filter = _uiState.value.filter
         if (isFirstLoading && (filter.user == null || !filter.isFilterUser)) { // 默认筛选第一个用户
@@ -278,9 +278,9 @@ class StatisticsViewModel @Inject constructor(
         // 需要按时区偏移一下
         val offset = TimeZone.getDefault().rawOffset
         val rawDataList = if (filter.isFilterUser && filter.user != null)
-            db.manHoursDB().queryRangeDataListByUserName(_uiState.value.filter.showRange.start - offset, _uiState.value.filter.showRange.end - offset, filter.user!!, 1, Int.MAX_VALUE)
+            db.wxStepDB().queryRangeDataListByUserName(_uiState.value.filter.showRange.start - offset, _uiState.value.filter.showRange.end - offset, filter.user!!, 1, Int.MAX_VALUE)
         else
-            db.manHoursDB().queryRangeDataList(_uiState.value.filter.showRange.start - offset, _uiState.value.filter.showRange.end - offset, 1, Int.MAX_VALUE)
+            db.wxStepDB().queryRangeDataList(_uiState.value.filter.showRange.start - offset, _uiState.value.filter.showRange.end - offset, 1, Int.MAX_VALUE)
 
         // 统计图需要平滑数据，所以不能折叠
         if (_uiState.value.showType == StatisticsShowType.Chart) {
