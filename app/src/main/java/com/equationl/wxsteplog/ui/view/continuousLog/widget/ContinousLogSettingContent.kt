@@ -1,4 +1,4 @@
-package com.equationl.wxsteplog.ui.view.home.widget
+package com.equationl.wxsteplog.ui.view.continuousLog.widget
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -40,7 +39,7 @@ import com.equationl.wxsteplog.ui.widget.ChooseUserNameDialog
 import com.vanpra.composematerialdialogs.rememberMaterialDialogState
 
 @Composable
-fun HomeSettingContent(
+fun ContinuousLogSettingContent(
     logUserModel: MutableState<LogSettingMode>,
     userNameList: SnapshotStateList<String>,
     intervalTime: MutableState<String>,
@@ -168,38 +167,6 @@ fun HomeSettingContent(
                     singleLine = true,
                     label = {
                         Text(text = "查看数据时筛选用户名")
-                    },
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text),
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text("如果不知道以下选项是什么意思请勿修改", style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.error))
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = Constants.wxPkgName.value,
-                    onValueChange = {
-                        Constants.wxPkgName.value = it
-                    },
-                    singleLine = true,
-                    label = {
-                        Text(text = "微信包名")
-                    },
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text),
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = Constants.wxLauncherPkg.value,
-                    onValueChange = {
-                        Constants.wxLauncherPkg.value = it
-                    },
-                    singleLine = true,
-                    label = {
-                        Text(text = "微信启动类")
                     },
                     keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text),
                 )
