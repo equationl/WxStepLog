@@ -44,17 +44,17 @@ data class WxStepHistoryTable (
     @ColumnInfo(name = "user_order")
     var userOrder: Int?,
     /**
-     * 程序开始运行时间
+     * 程序开始运行时间（本轮读取的开始时间）
      * */
     @ColumnInfo(name = "log_start_time")
     var logStartTime: Long,
     /**
-     * 程序结束运行时间
+     * 程序结束运行时间（此条数据插入时的时间）
      * */
     @ColumnInfo(name = "log_end_time")
     var logEndTime: Long,
     /**
-     * 数据时间（该数据实际是哪个时间的数据）
+     * 数据时间（该数据实际是哪个时间的数据， 忽略时间信息，仅日期信息）
      * */
     @ColumnInfo(name = "data_time")
     var dataTime: Long?,

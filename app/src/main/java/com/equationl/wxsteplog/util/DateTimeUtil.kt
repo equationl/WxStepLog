@@ -63,6 +63,16 @@ object DateTimeUtil {
         return cal.timeInMillis
     }
 
+    fun getWeeOfYesterday(): Long {
+        val cal = Calendar.getInstance()
+        cal.add(Calendar.DAY_OF_MONTH, -1)
+        cal[Calendar.HOUR_OF_DAY] = 0
+        cal[Calendar.SECOND] = 0
+        cal[Calendar.MINUTE] = 0
+        cal[Calendar.MILLISECOND] = 0
+        return cal.timeInMillis
+    }
+
     fun getCurrentDayRange(): StatisticsShowRange {
         val start = getWeeOfToday()
         val end = start + DAY_MILL_SECOND_TIME
@@ -79,6 +89,40 @@ object DateTimeUtil {
 
     fun getTimeFromHalfHourIndex(index: Int): String {
         return timeWithHalfHours[index]
+    }
+
+    /**
+     *
+     * 返回从聊天消息列表中解析出来的时间
+     *
+     * 仅解析到日期，时间信息将被舍去。
+     *
+     * 输入的 [dateTimeText] 可能具有以下几种形式：
+     *
+     * 0 -> "14:27"
+     * 1 -> "昨天 22:40"
+     * 2 -> "1月5日 晚上22:40"
+     * 3 -> "2024年12月30日 下午17:21"
+     * */
+    fun getTimeFromMsgListHeader(dateTimeText: String): Long {
+        val textList = dateTimeText.split(" ")
+        if (textList.isEmpty()) return 0
+        if (textList.size == 1) { // 情况 0
+            return getWeeOfToday()
+        }
+        else {
+            val firstItem = textList.first()
+
+            return if (firstItem.contains("昨天")) { // 情况 1
+                getWeeOfYesterday()
+            } else {
+                if (firstItem.contains("年")) { // 情况 3
+                    firstItem.toTimestamp("yyyy年M月d日")
+                } else { // 情况 2
+                    "${System.currentTimeMillis().formatDateTime("yyyy年")}$firstItem".toTimestamp("yyyy年M月d日")
+                }
+            }
+        }
     }
 
 }

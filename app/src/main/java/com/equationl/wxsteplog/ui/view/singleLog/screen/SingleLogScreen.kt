@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.equationl.wxsteplog.constants.Route
+import com.equationl.wxsteplog.step.OverManager
 import com.equationl.wxsteplog.ui.LocalNavController
 
 @Composable
@@ -50,7 +51,7 @@ private fun SingleLogContent() {
     ) {
         OutlinedButton(
             onClick = {
-                // TODO 开始单次读取
+                OverManager.showSingleLog()
             }
         ) {
             Text("开始读取")

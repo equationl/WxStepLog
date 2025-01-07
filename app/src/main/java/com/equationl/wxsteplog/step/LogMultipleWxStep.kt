@@ -76,7 +76,6 @@ class LogMultipleWxStep : StepImpl() {
             val setting = step.data as WxStepLogSetting
             val nodes = Assists.getAllNodes()
             for (node in nodes) {
-                // FIXME 需要确保唯一性
                 if (node?.text?.contains("微信运动") == true) {
                     OverManager.log("已进入微信主页，点击【微信运动】")
                     node.findFirstParentClickable()?.click()
@@ -298,10 +297,7 @@ class LogMultipleWxStep : StepImpl() {
 
     private fun getListView(): AccessibilityNodeInfo? {
         val listView = Assists.findByTags("android.widget.ListView").firstOrNull()
-        // fixme 这个需要确定一下先
-//        if (listView == null) {
-//            listView = Assists.findByTags("androidx.recyclerview.widget.RecyclerView")
-//        }
+
         return listView
     }
 
