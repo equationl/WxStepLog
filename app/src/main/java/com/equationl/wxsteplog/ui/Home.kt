@@ -12,6 +12,7 @@ import com.equationl.wxsteplog.ui.view.continuousLog.screen.ContinuousLogScreen
 import com.equationl.wxsteplog.ui.view.home.screen.HomeScreen
 import com.equationl.wxsteplog.ui.view.setting.screen.SettingScreen
 import com.equationl.wxsteplog.ui.view.singleLog.screen.SingleLogScreen
+import com.equationl.wxsteplog.ui.view.statistics.screen.HistoryStatisticsScreen
 import com.equationl.wxsteplog.ui.view.statistics.screen.StatisticsScreen
 
 val LocalNavController = staticCompositionLocalOf<NavHostController> { error("No NavController provided") }
@@ -42,6 +43,10 @@ fun HomeNavHost(
 
             composable(Route.STATISTIC) {
                 StatisticsScreen()
+            }
+
+            composable(Route.HISTORY_STATISTIC) {
+                HistoryStatisticsScreen()
             }
         }
     }

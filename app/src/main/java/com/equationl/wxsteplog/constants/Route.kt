@@ -5,5 +5,6 @@ object Route {
     const val CONTINUOUS_LOG = "continuousLog"
     const val SINGLE_LOG = "singleLog"
     const val STATISTIC = "statistic"
+    const val HISTORY_STATISTIC = "historyStatistic"
     const val GLOBAL_SETTING = "globalSetting"
 }

@@ -111,7 +111,7 @@ class LogWxHistoryStep : StepImpl() {
                 val listViewChildren = listView?.getChildren()
                 listViewChildren?.forEach { cardParent ->
                     val cardSubItemList = cardParent?.getChildren()
-                    // FIXME 这种判断方式不对，如果有点赞消息的话也会判断成卡片（不过其实从点赞消息点进去也没有问题）
+                    // 这种判断方式不对，如果有点赞消息的话也会判断成卡片（不过其实从点赞消息点进去也没有问题）
                     Log.i("el", "onImpl: className = ${cardSubItemList?.firstOrNull()?.className }, size = ${cardSubItemList?.size}")
                     if (cardSubItemList?.firstOrNull()?.className == "android.widget.TextView" && cardSubItemList.size >= 2) {
                         val dateTimeText = cardSubItemList.first()!!.text.toString()

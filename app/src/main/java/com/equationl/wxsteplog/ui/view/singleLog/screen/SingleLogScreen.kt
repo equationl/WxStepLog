@@ -1,5 +1,6 @@
 package com.equationl.wxsteplog.ui.view.singleLog.screen
 
+import android.content.pm.ActivityInfo
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,14 +18,22 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import com.equationl.wxsteplog.constants.Route
 import com.equationl.wxsteplog.step.OverManager
 import com.equationl.wxsteplog.ui.LocalNavController
+import com.equationl.wxsteplog.util.Utils
 
 @Composable
 fun SingleLogScreen() {
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        Utils.changeScreenOrientation(context, ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -78,8 +87,7 @@ private fun SingleLogTopBar() {
         actions = {
             IconButton(
                 onClick = {
-                    // TODO 需要新的统计页面
-                    navController.navigate(Route.STATISTIC)
+                    navController.navigate(Route.HISTORY_STATISTIC)
                 }
             ) {
                 Icon(Icons.Outlined.Analytics, contentDescription = "menu")

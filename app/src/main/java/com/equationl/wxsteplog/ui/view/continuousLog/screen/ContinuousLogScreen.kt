@@ -1,6 +1,7 @@
 package com.equationl.wxsteplog.ui.view.continuousLog.screen
 
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,6 +40,7 @@ import com.equationl.wxsteplog.model.toLogUserMode
 import com.equationl.wxsteplog.step.OverManager
 import com.equationl.wxsteplog.ui.LocalNavController
 import com.equationl.wxsteplog.ui.view.continuousLog.widget.ContinuousLogSettingContent
+import com.equationl.wxsteplog.util.Utils
 import com.equationl.wxsteplog.util.datastore.DataKey
 import com.equationl.wxsteplog.util.datastore.DataStoreUtils
 import com.equationl.wxsteplog.util.fromJsonList
@@ -50,6 +52,11 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun ContinuousLogScreen() {
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        Utils.changeScreenOrientation(context, ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
