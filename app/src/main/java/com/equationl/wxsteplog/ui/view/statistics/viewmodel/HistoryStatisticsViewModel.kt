@@ -251,7 +251,9 @@ class HistoryStatisticsViewModel @Inject constructor(
 
             buffer.useLines {
                 if (it.firstOrNull() != Constants.WX_HISTORY_LOG_DATA_CSV_HEADER) {
-                    Toast.makeText(context, "导入失败，表头不符合！", Toast.LENGTH_LONG).show()
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "导入失败，表头不符合！", Toast.LENGTH_LONG).show()
+                    }
                     onFinish()
                     return@launch
                 }
