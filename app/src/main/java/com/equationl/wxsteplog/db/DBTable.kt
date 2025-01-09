@@ -31,7 +31,7 @@ data class WxStepTable (
     var logModel: String?,
 )
 
-@Entity(tableName = "wx_step_history_table")
+@Entity(tableName = "wx_step_history_table", indices = [Index(value = ["user_name", "step_num", "like_Num", "log_end_time", "user_order", "data_time"], unique = true)])
 data class WxStepHistoryTable (
     @PrimaryKey(autoGenerate = true)
     var id: Int = 0,
@@ -59,5 +59,12 @@ data class WxStepHistoryTable (
     @ColumnInfo(name = "data_time")
     var dataTime: Long?,
     @ColumnInfo(name = "data_time_string")
-    var dataTimeString: String?
+    var dataTimeString: String?,
+    /**
+     * 该值为枚举 [LogModel]
+     *
+     * 可能有多个类型，不同类型用 , 分隔
+     * */
+    @ColumnInfo(name = "log_model")
+    var logModel: String?,
 )

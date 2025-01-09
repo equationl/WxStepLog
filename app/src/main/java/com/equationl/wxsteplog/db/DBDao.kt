@@ -39,6 +39,9 @@ interface WxStepHistoryDao{
     @Query("SELECT * FROM wx_step_history_table")
     suspend fun queryAllData(): List<WxStepHistoryTable>
 
+    @Query("SELECT * FROM wx_step_history_table WHERE log_start_time=:logStartTime")
+    suspend fun queryAllDataByLogStartTime(logStartTime: Long): List<WxStepHistoryTable>
+
     @Query("SELECT log_start_time AS 'logStartTime', count(*) AS 'count', min(data_time) AS 'startTime', max(data_time) AS 'endTime' FROM wx_step_history_table GROUP BY log_start_time")
     suspend fun getLogStartTimeList(): List<StepHistoryLogStartTimeDbModel>
 

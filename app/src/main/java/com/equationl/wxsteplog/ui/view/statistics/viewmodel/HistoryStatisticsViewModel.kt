@@ -9,6 +9,8 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.equationl.wxsteplog.constants.Constants
+import com.equationl.wxsteplog.db.DbUtil.DATABASE_FILE_NAME
 import com.equationl.wxsteplog.db.WxStepDB
 import com.equationl.wxsteplog.db.WxStepHistoryTable
 import com.equationl.wxsteplog.model.StaticsScreenModel
@@ -22,6 +24,7 @@ import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowType
 import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
 import com.equationl.wxsteplog.util.ResolveDataUtil
 import com.equationl.wxsteplog.util.Utils
+import com.equationl.wxsteplog.util.log.LogUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -85,7 +88,7 @@ class HistoryStatisticsViewModel @Inject constructor(
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = "text/comma-separated-values"
-            putExtra(Intent.EXTRA_TITLE, "wxStepLog_${System.currentTimeMillis().formatDateTime("yyyy_MM_dd_HH_mm_ss")}.csv")
+            putExtra(Intent.EXTRA_TITLE, "wxStepHistoryLog_${System.currentTimeMillis().formatDateTime("yyyy_MM_dd_HH_mm_ss")}.csv")
         }
         intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         intent.setFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
@@ -119,57 +122,64 @@ class HistoryStatisticsViewModel @Inject constructor(
         result: ActivityResult,
         context: Context,
         filter: HistoryStatisticsFilter?,
+        detailId: Long?,
         onFinish: () -> Unit,
         onProgress: (progress: Float) -> Unit
     ) {
-        // TODO change
-        Toast.makeText(context, "TODO", Toast.LENGTH_SHORT).show()
+        viewModelScope.launch(Dispatchers.IO) {
+            val data = result.data
+            val uri = data?.data
+            if (uri == null) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "导出错误：uri is null", Toast.LENGTH_SHORT).show()
+                    onFinish()
+                }
 
-//        viewModelScope.launch(Dispatchers.IO) {
-//            val data = result.data
-//            val uri = data?.data
-//            if (uri == null) {
-//                withContext(Dispatchers.Main) {
-//                    Toast.makeText(context, "导出错误：uri is null", Toast.LENGTH_SHORT).show()
-//                    onFinish()
-//                }
-//
-//                return@launch
-//            }
-//
-//            val outputStream = context.contentResolver.openOutputStream(uri)
-//            if (outputStream == null) {
-//                withContext(Dispatchers.Main) {
-//                    Toast.makeText(context, "导出错误：outputStream is null", Toast.LENGTH_SHORT).show()
-//                    onFinish()
-//                }
-//
-//                return@launch
-//            }
-//
-//            LogUtil.i("el", "export with filter: $filter")
-//            val dataList = if (filter == null) {
-//                db.wxStepDB().queryAllData()
-//            } else {
-//                // val offset = TimeZone.getDefault().rawOffset
-//                if (filter.isFilterUser && filter.user != null)
-//                    db.wxStepDB().queryRangeDataListByUserName(_uiState.value.filter.showRange.start, _uiState.value.filter.showRange.end, filter.user, 1, Int.MAX_VALUE)
-//                else
-//                    db.wxStepDB().queryRangeDataList(_uiState.value.filter.showRange.start, _uiState.value.filter.showRange.end, 1, Int.MAX_VALUE)
-//            }
-//
-//            dataList.forEachIndexed { index, row ->
-//                outputStream.write("${row.id},${row.userName},${row.stepNum},${row.likeNum},${row.logTimeString},${row.logTime},${row.userOrder},${row.logModel}\n".toByteArray())
-//                onProgress((index + 1).toFloat() / dataList.size)
-//            }
-//            outputStream.flush()
-//            outputStream.close()
-//            withContext(Dispatchers.Main) {
-//                Toast.makeText(context, "导出完成！", Toast.LENGTH_SHORT).show()
-//                onFinish()
-//            }
-//
-//        }
+                return@launch
+            }
+
+            val outputStream = context.contentResolver.openOutputStream(uri)
+            if (outputStream == null) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "导出错误：outputStream is null", Toast.LENGTH_SHORT).show()
+                    onFinish()
+                }
+
+                return@launch
+            }
+
+            LogUtil.i("el", "export with filter: $filter")
+            val dataList = if (filter == null) {
+                if (detailId == null) {
+                    db.wxStepHistoryDB().queryAllData()
+                }
+                else {
+                    db.wxStepHistoryDB().queryAllDataByLogStartTime(detailId)
+                }
+            } else {
+                val userName = if (filter.isFilterUser && filter.user != null) filter.user else "%"
+                if (detailId == null) {
+                    db.wxStepHistoryDB().queryRangeDataList(_uiState.value.filter.showRange.start, _uiState.value.filter.showRange.end, userName)
+                }
+                else {
+                    db.wxStepHistoryDB().queryRangeDataListByLogStartTime(_uiState.value.filter.showRange.start, _uiState.value.filter.showRange.end, detailId, userName)
+                }
+            }
+
+            // 表头
+            outputStream.write(Constants.WX_HISTORY_LOG_DATA_CSV_HEADER.toByteArray())
+
+            dataList.forEachIndexed { index, row ->
+                outputStream.write("${row.id},${row.userName},${row.stepNum},${row.likeNum},${row.userOrder},${row.logStartTime},${row.logEndTime},${row.dataTime},${row.dataTimeString},${row.logModel}\n".toByteArray())
+                onProgress((index + 1).toFloat() / dataList.size)
+            }
+            outputStream.flush()
+            outputStream.close()
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "导出完成！", Toast.LENGTH_SHORT).show()
+                onFinish()
+            }
+        }
     }
 
     fun exportDataToDb(
@@ -177,43 +187,38 @@ class HistoryStatisticsViewModel @Inject constructor(
         context: Context,
         onFinish: () -> Unit,
     ) {
-        // TODO change
+        viewModelScope.launch(Dispatchers.IO) {
+            val data = result.data
+            val uri = data?.data
+            if (uri == null) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "导出错误：uri is null", Toast.LENGTH_SHORT).show()
+                    onFinish()
+                }
 
-        Toast.makeText(context, "TODO", Toast.LENGTH_SHORT).show()
-        return
+                return@launch
+            }
 
-//        viewModelScope.launch(Dispatchers.IO) {
-//            val data = result.data
-//            val uri = data?.data
-//            if (uri == null) {
-//                withContext(Dispatchers.Main) {
-//                    Toast.makeText(context, "导出错误：uri is null", Toast.LENGTH_SHORT).show()
-//                    onFinish()
-//                }
-//
-//                return@launch
-//            }
-//
-//            val outputStream = context.contentResolver.openOutputStream(uri)
-//            if (outputStream == null) {
-//                withContext(Dispatchers.Main) {
-//                    Toast.makeText(context, "导出错误：outputStream is null", Toast.LENGTH_SHORT).show()
-//                    onFinish()
-//                }
-//
-//                return@launch
-//            }
-//
-//            val dataBaseFile = context.getDatabasePath(DATABASE_FILE_NAME)
-//            outputStream.write(dataBaseFile.readBytes())
-//
-//            outputStream.flush()
-//            outputStream.close()
-//            withContext(Dispatchers.Main) {
-//                Toast.makeText(context, "导出完成！", Toast.LENGTH_SHORT).show()
-//                onFinish()
-//            }
-//        }
+            val outputStream = context.contentResolver.openOutputStream(uri)
+            if (outputStream == null) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "导出错误：outputStream is null", Toast.LENGTH_SHORT).show()
+                    onFinish()
+                }
+
+                return@launch
+            }
+
+            val dataBaseFile = context.getDatabasePath(DATABASE_FILE_NAME)
+            outputStream.write(dataBaseFile.readBytes())
+
+            outputStream.flush()
+            outputStream.close()
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "导出完成！", Toast.LENGTH_SHORT).show()
+                onFinish()
+            }
+        }
     }
 
     fun onImport(
@@ -222,49 +227,50 @@ class HistoryStatisticsViewModel @Inject constructor(
         onFinish: () -> Unit,
         onProgress: (readLines: Int) -> Unit
     ) {
-        // TODO change
-        Toast.makeText(context, "TODO", Toast.LENGTH_SHORT).show()
-        return
+        val data = result.data
+        val uri = data?.data
 
-//        val data = result.data
-//        val uri = data?.data
-//
-//        var hasConflict: Boolean
-//
-//        if (uri == null) {
-//            Toast.makeText(context, "导入错误：uri is null", Toast.LENGTH_SHORT).show()
-//            onFinish()
-//            return
-//        }
-//
-//        viewModelScope.launch(Dispatchers.IO) {
-//            val buffer = context.contentResolver.openInputStream(uri)?.bufferedReader()
-//
-//            if (buffer == null) {
-//                withContext(Dispatchers.Main) {
-//                    Toast.makeText(context, "导入错误：buffer is null", Toast.LENGTH_SHORT).show()
-//                    onFinish()
-//                }
-//                return@launch
-//            }
-//
-//            buffer.useLines {
-//                hasConflict = ResolveDataUtil.importDataFromCsv(it, db, onProgress)
-//            }
-//
-//            withContext(Dispatchers.Main) {
-//                if (hasConflict) {
-//                    Toast.makeText(context, "导入完成，但是部分数据由于某些错误没有导入", Toast.LENGTH_LONG).show()
-//                    onFinish()
-//                }
-//                else {
-//                    Toast.makeText(context, "导入成功", Toast.LENGTH_SHORT).show()
-//                    onFinish()
-//                }
-//            }
-//
-//            loadData()
-//        }
+        var hasConflict: Boolean
+
+        if (uri == null) {
+            Toast.makeText(context, "导入错误：uri is null", Toast.LENGTH_SHORT).show()
+            onFinish()
+            return
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val buffer = context.contentResolver.openInputStream(uri)?.bufferedReader()
+
+            if (buffer == null) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "导入错误：buffer is null", Toast.LENGTH_SHORT).show()
+                    onFinish()
+                }
+                return@launch
+            }
+
+            buffer.useLines {
+                if (it.firstOrNull() != Constants.WX_HISTORY_LOG_DATA_CSV_HEADER) {
+                    Toast.makeText(context, "导入失败，表头不符合！", Toast.LENGTH_LONG).show()
+                    onFinish()
+                    return@launch
+                }
+                hasConflict = ResolveDataUtil.importHistoryDataFromCsv(it, db, onProgress)
+            }
+
+            withContext(Dispatchers.Main) {
+                if (hasConflict) {
+                    Toast.makeText(context, "导入完成，但是部分数据由于某些错误没有导入", Toast.LENGTH_LONG).show()
+                    onFinish()
+                }
+                else {
+                    Toast.makeText(context, "导入成功", Toast.LENGTH_SHORT).show()
+                    onFinish()
+                }
+            }
+
+            loadData()
+        }
 
     }
 

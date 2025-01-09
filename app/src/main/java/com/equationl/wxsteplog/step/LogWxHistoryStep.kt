@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.db.DbUtil
+import com.equationl.wxsteplog.model.LogModel
 import com.equationl.wxsteplog.model.StepListIdModel
 import com.equationl.wxsteplog.util.DateTimeUtil
 import com.ven.assists.Assists
@@ -236,6 +237,7 @@ class LogWxHistoryStep : StepImpl() {
                             userOrder = orderText.toString().toIntOrNull(),
                             logStartTime = Constants.logWxHistoryStepStartTime,
                             dataTime = dateTime,
+                            logUserMode = LogModel.HistoryLog
                         )
                         alreadyLogNameList.add(nameText.toString())
                     }

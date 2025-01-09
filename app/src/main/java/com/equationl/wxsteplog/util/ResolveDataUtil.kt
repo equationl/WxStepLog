@@ -154,6 +154,58 @@ object ResolveDataUtil {
         return hasConflict
     }
 
+    suspend fun importHistoryDataFromCsv(
+        csvLines: Sequence<String>,
+        db: WxStepDB,
+        onProgress: (readLines: Int) -> Unit
+    ): Boolean {
+        var hasConflict = false
+        var index = 0
+
+        for (line in csvLines) {
+            index++
+            onProgress(index)
+
+            if (line.isBlank()) {
+                Log.w(TAG, "importDataFromCsv: line is blank!")
+                continue
+            }
+
+            val itemList = line.split(",")
+
+            // 导出数据为 10 列
+            if (itemList.size !=  10) {
+                Log.w(TAG, "importDataFromCsv: line data size not right: $itemList")
+                hasConflict = true
+                continue
+            }
+
+            try {
+                val wxStepTable = WxStepHistoryTable(
+                    userName = itemList[1],
+                    stepNum = itemList[2].toIntOrNull(),
+                    likeNum = itemList[3].toIntOrNull(),
+                    userOrder = itemList[4].toIntOrNull(),
+                    logStartTime = itemList[5].toLongOrNull() ?: 0,
+                    logEndTime = itemList[6].toLongOrNull() ?: 0,
+                    dataTime = itemList[7].toLongOrNull() ?: 0,
+                    dataTimeString = itemList[8],
+                    logModel = "${itemList.getOrNull(9) ?: ""},${LogModel.Import}"
+                )
+                val insertResult = db.wxStepHistoryDB().insertData(wxStepTable)
+                if (insertResult <= 0) {
+                    hasConflict = true
+                    Log.w(TAG, "importDataFromCsv: insert Data fail, return $insertResult, with data: $wxStepTable")
+                }
+            } catch (tr: Throwable) {
+                Log.e(TAG, "importDataFromCsv: ", tr)
+                hasConflict = true
+            }
+        }
+
+        return hasConflict
+    }
+
     private fun getXValueIndex(timeStamp: Long): Int {
         return (timeStamp / 1000L / 60L / 30L).toInt() + 1
     }

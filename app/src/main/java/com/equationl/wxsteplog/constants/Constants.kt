@@ -4,6 +4,8 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 
 object Constants {
+    const val WX_HISTORY_LOG_DATA_CSV_HEADER = "id,userName,stepNum,likeNum,userOrder,logStartTime,logEndTime,dataTime,dataTimeString,logModel\n"
+
     val allUserNameList = mutableStateListOf<String>()
     var isExportWithFilter = false
     var showDataFilterUserName: String = ""

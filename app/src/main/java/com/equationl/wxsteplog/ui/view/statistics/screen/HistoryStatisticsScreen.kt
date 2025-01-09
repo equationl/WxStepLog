@@ -115,6 +115,7 @@ fun HistoryStatisticsScreen(viewModel: HistoryStatisticsViewModel = hiltViewMode
             result,
             context,
             if (Constants.isExportWithFilter) state.filter else null,
+            detailId = state.detailId,
             onFinish = {
                 isShowLoading = false
                 loadingDialogContent = ""
@@ -341,17 +342,16 @@ private fun TopBar(
                         contentDescription = "show type"
                     )
                 }
-            }
-
-            IconButton(
-                onClick = {
-                    isExpandMenu = true
+                IconButton(
+                    onClick = {
+                        isExpandMenu = true
+                    }
+                ) {
+                    Icon(
+                        Icons.Outlined.MoreVert,
+                        contentDescription = "more function"
+                    )
                 }
-            ) {
-                Icon(
-                    Icons.Outlined.MoreVert,
-                    contentDescription = "more function"
-                )
             }
 
             TopBarMoreFunction(

@@ -25,7 +25,7 @@ object DbUtil {
         )
     }
 
-    suspend fun saveHistoryData(stepNum: Int?, likeNum: Int?, userName: String, userOrder: Int?, logStartTime: Long, dataTime: Long) {
+    suspend fun saveHistoryData(stepNum: Int?, likeNum: Int?, userName: String, userOrder: Int?, logStartTime: Long, dataTime: Long, logUserMode: LogModel?) {
         val currentTime = System.currentTimeMillis()
 
         db.wxStepHistoryDB().insertData(
@@ -38,6 +38,7 @@ object DbUtil {
                 logEndTime = currentTime,
                 dataTime = dataTime,
                 dataTimeString = dataTime.formatDateTime(),
+                logModel = logUserMode?.name
             )
         )
     }
