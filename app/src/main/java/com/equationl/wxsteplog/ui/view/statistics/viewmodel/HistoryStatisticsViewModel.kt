@@ -230,7 +230,7 @@ class HistoryStatisticsViewModel @Inject constructor(
         val data = result.data
         val uri = data?.data
 
-        var hasConflict: Boolean
+        var importResult: Result<Boolean>
 
         if (uri == null) {
             Toast.makeText(context, "导入错误：uri is null", Toast.LENGTH_SHORT).show()
@@ -250,25 +250,26 @@ class HistoryStatisticsViewModel @Inject constructor(
             }
 
             buffer.useLines {
-                if (it.firstOrNull() != Constants.WX_HISTORY_LOG_DATA_CSV_HEADER) {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "导入失败，表头不符合！", Toast.LENGTH_LONG).show()
-                    }
-                    onFinish()
-                    return@launch
-                }
-                hasConflict = ResolveDataUtil.importHistoryDataFromCsv(it, db, onProgress)
+                importResult = ResolveDataUtil.importHistoryDataFromCsv(it, db, onProgress)
             }
 
             withContext(Dispatchers.Main) {
-                if (hasConflict) {
-                    Toast.makeText(context, "导入完成，但是部分数据由于某些错误没有导入", Toast.LENGTH_LONG).show()
-                    onFinish()
-                }
-                else {
-                    Toast.makeText(context, "导入成功", Toast.LENGTH_SHORT).show()
-                    onFinish()
-                }
+                importResult.fold(
+                    onSuccess = {
+                        if (it) {
+                            Toast.makeText(context, "导入完成，但是部分数据由于某些错误没有导入", Toast.LENGTH_LONG).show()
+                            onFinish()
+                        }
+                        else {
+                            Toast.makeText(context, "导入成功", Toast.LENGTH_SHORT).show()
+                            onFinish()
+                        }
+                    },
+                    onFailure = {
+                        Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
+                        onFinish()
+                    }
+                )
             }
 
             loadData()
@@ -349,7 +350,7 @@ class HistoryStatisticsViewModel @Inject constructor(
 
             var charList = mapOf<String, List<StatisticsChartData>>()
             if (_uiState.value.showType == StatisticsShowType.Chart) {
-                charList = ResolveDataUtil.resolveChartData(resolveResult)
+                charList = ResolveDataUtil.resolveHistoryChartData(resolveResult)
             }
 
             _uiState.update {

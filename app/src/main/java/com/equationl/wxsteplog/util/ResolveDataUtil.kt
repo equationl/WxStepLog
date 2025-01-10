@@ -1,6 +1,7 @@
 package com.equationl.wxsteplog.util
 
 import android.util.Log
+import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.db.WxStepDB
 import com.equationl.wxsteplog.db.WxStepHistoryTable
 import com.equationl.wxsteplog.db.WxStepTable
@@ -102,6 +103,43 @@ object ResolveDataUtil {
         return charList
     }
 
+    // TODO 解析统计图数据
+    fun resolveHistoryChartData(resolveResult: List<StaticsScreenModel>): Map<String, List<StatisticsChartData>> {
+        val charList = mutableMapOf<String, MutableList<StatisticsChartData>>()
+        for (item in resolveResult) {
+            val currentData = charList[item.userName] ?: mutableListOf()
+            var lineData = currentData.find { it.label.split(" ").first() == item.headerTitle }
+            if (lineData == null) {
+                lineData = StatisticsChartData(
+                    MutableList(49) { index: Int -> index },
+                    MutableList(49) { _ -> 0 },
+                    "${item.headerTitle} ${item.logTime.toWeekday()}",
+                    Utils.getRandomColor(item.headerTitle.toTimestamp("yyyy-MM-dd")),
+                )
+                currentData.add(lineData)
+            }
+
+            val onlyTimeStamp = item.logTime.formatDateTime("HHmm").toTimestamp("HHmm", isWithoutTimeZone = true)
+            // Log.i("el", "resolveChartData: onlyTimeStamp = $onlyTimeStamp, logTime = ${item.logTime}, fromat = ${item.logTime.formatDateTime("HHmm")}, step = ${item.stepNum}")
+            val index = getXValueIndex(onlyTimeStamp)
+            lineData.x[index] = index
+            var yValue = lineData.y.getOrNull(index)
+            if (yValue != null) {
+                if (yValue.toInt() < item.stepNum) {
+                    yValue = item.stepNum
+                }
+            }
+            else {
+                yValue = item.stepNum
+            }
+            lineData.y[index] = yValue
+
+            charList[item.userName] = currentData
+        }
+
+        return charList
+    }
+
     suspend fun importDataFromCsv(
         csvLines: Sequence<String>,
         db: WxStepDB,
@@ -154,15 +192,26 @@ object ResolveDataUtil {
         return hasConflict
     }
 
+    /**
+     * @return true: 部分数据有冲突，没有导入
+     * */
     suspend fun importHistoryDataFromCsv(
         csvLines: Sequence<String>,
         db: WxStepDB,
         onProgress: (readLines: Int) -> Unit
-    ): Boolean {
+    ): Result<Boolean> {
         var hasConflict = false
         var index = 0
 
         for (line in csvLines) {
+            if (index == 0) {
+                if (line != Constants.WX_HISTORY_LOG_DATA_CSV_HEADER.replace("\n", "")) {
+                    return Result.failure(Exception("导入失败，表头不符合！"))
+                }
+                index++
+                continue
+            }
+
             index++
             onProgress(index)
 
@@ -203,7 +252,7 @@ object ResolveDataUtil {
             }
         }
 
-        return hasConflict
+        return Result.success(hasConflict)
     }
 
     private fun getXValueIndex(timeStamp: Long): Int {
