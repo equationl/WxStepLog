@@ -88,7 +88,7 @@ import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowType
 import com.equationl.wxsteplog.ui.view.statistics.viewmodel.HistoryStatisticsViewModel
 import com.equationl.wxsteplog.ui.widget.DateTimeRangePickerDialog
 import com.equationl.wxsteplog.ui.widget.ExportConfirmDialog
-import com.equationl.wxsteplog.ui.widget.LineSeriesChart
+import com.equationl.wxsteplog.ui.widget.HistoryLineSeriesChart
 import com.equationl.wxsteplog.ui.widget.ListEmptyContent
 import com.equationl.wxsteplog.ui.widget.LoadingContent
 import com.equationl.wxsteplog.ui.widget.LoadingDialog
@@ -583,6 +583,7 @@ private fun HeaderFilter(
 
 @Composable
 private fun FilterUser(state: HistoryStatisticsState, onChangeFilter: (newFilter: HistoryStatisticsFilter) -> Unit) {
+    // TODO 点击筛选用户后没有隐藏弹出框
     var isShowUserDropMenu by remember { mutableStateOf(false) }
 
     Row(
@@ -661,7 +662,6 @@ private fun ListGroupHeader(leftText: String) {
     }
 }
 
-// TODO 统计图需要修改
 @Composable
 private fun ChartContent(
     state: HistoryStatisticsState
@@ -673,12 +673,10 @@ private fun ChartContent(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        //HeaderFilter(state, onChangeFilter = onChangeFilter)
-
         for (userChartData in state.chartData) {
             Text(userChartData.key, style = MaterialTheme.typography.labelSmall)
             Spacer(modifier = Modifier.height(8.dp))
-            LineSeriesChart(userChartData.value)
+            HistoryLineSeriesChart(listOf(userChartData.value))
             Spacer(modifier = Modifier.height(16.dp))
         }
     }

@@ -17,7 +17,7 @@ import com.equationl.wxsteplog.ui.view.statistics.state.HistoryDataShowType
 import com.equationl.wxsteplog.ui.view.statistics.state.HistoryLogItemModel
 import com.equationl.wxsteplog.ui.view.statistics.state.HistoryStatisticsFilter
 import com.equationl.wxsteplog.ui.view.statistics.state.HistoryStatisticsState
-import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsChartData
+import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsHistoryChartData
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowRange
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowType
 import com.equationl.wxsteplog.util.DateTimeUtil
@@ -348,7 +348,7 @@ class HistoryStatisticsViewModel @Inject constructor(
 
             val resolveResult = resolveData(rawDataList)
 
-            var charList = mapOf<String, List<StatisticsChartData>>()
+            var charList = mapOf<String, StatisticsHistoryChartData>()
             if (_uiState.value.showType == StatisticsShowType.Chart) {
                 charList = ResolveDataUtil.resolveHistoryChartData(resolveResult)
             }

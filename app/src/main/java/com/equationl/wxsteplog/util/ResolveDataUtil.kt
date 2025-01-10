@@ -8,6 +8,7 @@ import com.equationl.wxsteplog.db.WxStepTable
 import com.equationl.wxsteplog.model.LogModel
 import com.equationl.wxsteplog.model.StaticsScreenModel
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsChartData
+import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsHistoryChartData
 import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
 import com.equationl.wxsteplog.util.DateTimeUtil.toTimestamp
 import com.equationl.wxsteplog.util.DateTimeUtil.toWeekday
@@ -103,38 +104,31 @@ object ResolveDataUtil {
         return charList
     }
 
-    // TODO 解析统计图数据
-    fun resolveHistoryChartData(resolveResult: List<StaticsScreenModel>): Map<String, List<StatisticsChartData>> {
-        val charList = mutableMapOf<String, MutableList<StatisticsChartData>>()
-        for (item in resolveResult) {
-            val currentData = charList[item.userName] ?: mutableListOf()
-            var lineData = currentData.find { it.label.split(" ").first() == item.headerTitle }
-            if (lineData == null) {
-                lineData = StatisticsChartData(
-                    MutableList(49) { index: Int -> index },
-                    MutableList(49) { _ -> 0 },
-                    "${item.headerTitle} ${item.logTime.toWeekday()}",
-                    Utils.getRandomColor(item.headerTitle.toTimestamp("yyyy-MM-dd")),
+    /**
+     * @return {"userName": [StatisticsHistoryChartData]}
+     * */
+    fun resolveHistoryChartData(resolveResult: List<StaticsScreenModel>): Map<String, StatisticsHistoryChartData> {
+        // 排序数据确保数据时间为递增
+        val newList = resolveResult.sortedBy { it.logTime }
+        val charList = mutableMapOf<String, StatisticsHistoryChartData>()
+        for (item in newList) {
+            var currentData = charList[item.userName]
+            if (currentData == null) {
+                currentData = StatisticsHistoryChartData(
+                    mutableListOf(),
+                    mutableListOf(),
+                    mutableListOf(),
+                    mutableListOf(),
+                    item.userName,
+                    Utils.getRandomColor(item.userName.hashCode().toLong())
                 )
-                currentData.add(lineData)
+                charList[item.userName] = currentData
             }
 
-            val onlyTimeStamp = item.logTime.formatDateTime("HHmm").toTimestamp("HHmm", isWithoutTimeZone = true)
-            // Log.i("el", "resolveChartData: onlyTimeStamp = $onlyTimeStamp, logTime = ${item.logTime}, fromat = ${item.logTime.formatDateTime("HHmm")}, step = ${item.stepNum}")
-            val index = getXValueIndex(onlyTimeStamp)
-            lineData.x[index] = index
-            var yValue = lineData.y.getOrNull(index)
-            if (yValue != null) {
-                if (yValue.toInt() < item.stepNum) {
-                    yValue = item.stepNum
-                }
-            }
-            else {
-                yValue = item.stepNum
-            }
-            lineData.y[index] = yValue
-
-            charList[item.userName] = currentData
+            currentData.x.add(currentData.x.size)
+            currentData.y.add(item.stepNum)
+            currentData.xLabelShort.add(item.logTime.formatDateTime("MM-dd"))
+            currentData.xLabelFull.add("${item.logTime.formatDateTime("yyyy-MM-dd")} ${item.logTime.toWeekday()}")
         }
 
         return charList
