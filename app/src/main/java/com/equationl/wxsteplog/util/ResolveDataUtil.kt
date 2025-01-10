@@ -47,17 +47,17 @@ object ResolveDataUtil {
         return result
     }
 
-    fun rawHistoryDataToStaticsModel(rawDataList: List<WxStepHistoryTable>): List<StaticsScreenModel> {
+    fun rawHistoryDataToStaticsModel(rawDataList: List<WxStepHistoryTable>, isFromDetail: Boolean): List<StaticsScreenModel> {
         val result = mutableListOf<StaticsScreenModel>()
         for (item in rawDataList) {
             result.add(
                 StaticsScreenModel(
                     id = item.id,
                     logTime = item.dataTime ?: 0,
-                    logTimeString = item.dataTimeString ?: "",
+                    logTimeString = if (isFromDetail) item.dataTime?.formatDateTime("yyyy-MM-dd") ?: "" else item.dataTimeString ?: "",
                     stepNum = item.stepNum ?: 0,
                     likeNum = item.likeNum ?: 0,
-                    headerTitle = item.dataTime?.formatDateTime("yyyy-MM-dd") ?: "",
+                    headerTitle = if (isFromDetail) "" else item.dataTime?.formatDateTime("yyyy-MM-dd") ?: "",
                     userName = item.userName
                 )
             )

@@ -381,6 +381,6 @@ class HistoryStatisticsViewModel @Inject constructor(
     }
 
     private fun resolveData(rawDataList: List<WxStepHistoryTable>): List<StaticsScreenModel> {
-        return ResolveDataUtil.rawHistoryDataToStaticsModel(rawDataList)
+        return ResolveDataUtil.rawHistoryDataToStaticsModel(rawDataList, _uiState.value.detailId != null)
     }
 }

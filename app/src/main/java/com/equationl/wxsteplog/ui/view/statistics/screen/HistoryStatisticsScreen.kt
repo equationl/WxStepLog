@@ -195,7 +195,8 @@ fun HistoryStatisticsScreen(viewModel: HistoryStatisticsViewModel = hiltViewMode
                 onFilterDateRange = viewModel::onFilterShowRange,
                 scrollBehavior = scrollBehavior,
                 collapsedFraction = collapsedFraction,
-                isShowFilter = state.filter.dataShowType != HistoryDataShowType.ByLog || state.detailId != null,
+                dataShowType = state.filter.dataShowType,
+                detailId = state.detailId,
                 onChangeShowType = {
                     viewModel.onChangeShowType(context)
                 },
@@ -286,7 +287,8 @@ private fun TopBar(
     iniDateRangeValue: StatisticsShowRange,
     scrollBehavior: TopAppBarScrollBehavior,
     collapsedFraction: Float,
-    isShowFilter: Boolean,
+    dataShowType: HistoryDataShowType,
+    detailId: Long?,
     onFilterDateRange: (value: StatisticsShowRange) -> Unit,
     onChangeShowType: () -> Unit,
     onExport: () -> Unit,
@@ -297,6 +299,7 @@ private fun TopBar(
     val navController = LocalNavController.current
     var isShowDatePickedDialog by remember { mutableStateOf(false) }
     var isExpandMenu by remember { mutableStateOf(false) }
+    val isShowFilter = dataShowType != HistoryDataShowType.ByLog || detailId != null
 
     MediumTopAppBar(
         title = {
@@ -312,7 +315,7 @@ private fun TopBar(
         navigationIcon = {
             IconButton(
                 onClick = {
-                    if (isShowFilter) {
+                    if (detailId != null) {
                         onCloseShowDetail()
                     }
                     else {
@@ -526,8 +529,10 @@ private fun ListContentByDetail(
 
             state.dataList.forEach { item ->
                 if (item.headerTitle != lastTitle) {
-                    stickyHeader {
-                        ListGroupHeader(leftText = item.headerTitle)
+                    if (state.detailId == null) {
+                        stickyHeader {
+                            ListGroupHeader(leftText = item.headerTitle)
+                        }
                     }
                     lastTitle = item.headerTitle
                 }
