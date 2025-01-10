@@ -45,10 +45,10 @@ interface WxStepHistoryDao{
     @Query("SELECT log_start_time AS 'logStartTime', count(*) AS 'count', min(data_time) AS 'startTime', max(data_time) AS 'endTime' FROM wx_step_history_table GROUP BY log_start_time")
     suspend fun getLogStartTimeList(): List<StepHistoryLogStartTimeDbModel>
 
-    @Query("SELECT * FROM wx_step_history_table WHERE (log_end_time BETWEEN :startTime AND :endTime) AND user_name LIKE :userName ORDER BY log_end_time ASC")
+    @Query("SELECT * FROM wx_step_history_table WHERE (data_time BETWEEN :startTime AND :endTime) AND user_name LIKE :userName ORDER BY data_time ASC")
     suspend fun queryRangeDataList(startTime: Long, endTime: Long, userName: String = "%"): List<WxStepHistoryTable>
 
-    @Query("SELECT * FROM wx_step_history_table WHERE (log_end_time BETWEEN :startTime AND :endTime) AND user_name LIKE :userName AND log_start_time=:logStartTime ORDER BY log_end_time ASC")
+    @Query("SELECT * FROM wx_step_history_table WHERE (data_time BETWEEN :startTime AND :endTime) AND user_name LIKE :userName AND log_start_time=:logStartTime ORDER BY data_time ASC")
     suspend fun queryRangeDataListByLogStartTime(startTime: Long, endTime: Long, logStartTime: Long, userName: String = "%"): List<WxStepHistoryTable>
 
     @Query("SELECT DISTINCT user_name FROM wx_step_history_table")

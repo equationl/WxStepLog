@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.icu.text.Collator
-import android.icu.util.TimeZone
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.lifecycle.ViewModel
@@ -21,6 +20,7 @@ import com.equationl.wxsteplog.ui.view.statistics.state.HistoryStatisticsState
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsChartData
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowRange
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowType
+import com.equationl.wxsteplog.util.DateTimeUtil
 import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
 import com.equationl.wxsteplog.util.ResolveDataUtil
 import com.equationl.wxsteplog.util.Utils
@@ -285,7 +285,12 @@ class HistoryStatisticsViewModel @Inject constructor(
     }
 
     fun onCloseShowDetail() {
-        _uiState.update { it.copy(detailId = null) }
+        _uiState.update {
+            it.copy(
+                detailId = null,
+                filter = it.filter.copy(showRange = DateTimeUtil.getCurrentDayRange())
+            )
+        }
 
         viewModelScope.launch {
             loadData()
@@ -293,7 +298,17 @@ class HistoryStatisticsViewModel @Inject constructor(
     }
 
     fun onClickHistoryLogItem(item: HistoryLogItemModel) {
-        _uiState.update { it.copy(detailId = item.id) }
+        _uiState.update {
+            it.copy(
+                detailId = item.id,
+                filter = it.filter.copy(
+                    showRange = StatisticsShowRange(
+                        item.rawData.startTime,
+                        item.rawData.endTime
+                    )
+                )
+            )
+        }
 
         viewModelScope.launch {
             loadData()
@@ -314,7 +329,7 @@ class HistoryStatisticsViewModel @Inject constructor(
 
         if (_uiState.value.detailId != null || _uiState.value.filter.dataShowType == HistoryDataShowType.ByAllData) { // 获取全部数据
             // 需要按时区偏移一下
-            val offset = TimeZone.getDefault().rawOffset
+            val offset = 0 //TimeZone.getDefault().rawOffset
             val filterUserName = if (filter.isFilterUser && filter.user != null) filter.user!! else "%"
             val rawDataList = if (_uiState.value.detailId != null)
                 dao.queryRangeDataListByLogStartTime(
@@ -355,8 +370,9 @@ class HistoryStatisticsViewModel @Inject constructor(
                         HistoryLogItemModel(
                             id = item.logStartTime,
                             title = item.logStartTime.formatDateTime(),
-                            subTitle = "${item.startTime.formatDateTime()} - ${item.endTime.formatDateTime()}",
+                            subTitle = "${item.startTime.formatDateTime("yyyy-MM-dd")} - ${item.endTime.formatDateTime("yyyy-MM-dd")}",
                             count = item.count,
+                            rawData = item
                         )
                     }
                 )

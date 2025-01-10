@@ -2,6 +2,7 @@ package com.equationl.wxsteplog.ui.view.statistics.state
 
 import androidx.compose.foundation.lazy.LazyListState
 import com.equationl.wxsteplog.model.StaticsScreenModel
+import com.equationl.wxsteplog.model.StepHistoryLogStartTimeDbModel
 import com.equationl.wxsteplog.util.DateTimeUtil
 
 data class HistoryStatisticsState(
@@ -33,6 +34,7 @@ data class HistoryLogItemModel (
     val title: String,
     val subTitle: String,
     val count: Int,
+    val rawData: StepHistoryLogStartTimeDbModel
 )
 
 enum class HistoryDataShowType {

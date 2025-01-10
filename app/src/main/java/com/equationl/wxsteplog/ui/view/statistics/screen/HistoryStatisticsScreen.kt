@@ -1,5 +1,6 @@
 package com.equationl.wxsteplog.ui.view.statistics.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -30,7 +31,6 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.BackupTable
-import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.ImportContacts
 import androidx.compose.material.icons.outlined.InsertChartOutlined
@@ -105,6 +105,10 @@ fun HistoryStatisticsScreen(viewModel: HistoryStatisticsViewModel = hiltViewMode
     var isShowExportDialog by remember { mutableStateOf(false) }
     var isShowLoading by remember { mutableStateOf(false) }
     var loadingDialogContent by remember { mutableStateOf("") }
+
+    BackHandler(state.detailId != null) {
+        viewModel.onCloseShowDetail()
+    }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -205,7 +209,8 @@ fun HistoryStatisticsScreen(viewModel: HistoryStatisticsViewModel = hiltViewMode
                 onExportDb = {
                     val intent = viewModel.createNewDatabaseFileIntent()
                     exportDbLauncher.launch(intent)
-                }
+                },
+                onCloseShowDetail = viewModel::onCloseShowDetail
             )
         },
         floatingActionButton = {
@@ -240,7 +245,7 @@ fun HistoryStatisticsScreen(viewModel: HistoryStatisticsViewModel = hiltViewMode
                 LoadingContent()
             }
             else {
-                HomeContent(state, collapsedFraction, viewModel::onChangeFilter, viewModel::onCloseShowDetail, viewModel::onClickHistoryLogItem)
+                HomeContent(state, collapsedFraction, viewModel::onChangeFilter, viewModel::onClickHistoryLogItem)
             }
         }
     }
@@ -287,6 +292,7 @@ private fun TopBar(
     onExport: () -> Unit,
     onImport: () -> Unit,
     onExportDb: () -> Unit,
+    onCloseShowDetail: () -> Unit,
 ) {
     val navController = LocalNavController.current
     var isShowDatePickedDialog by remember { mutableStateOf(false) }
@@ -306,7 +312,12 @@ private fun TopBar(
         navigationIcon = {
             IconButton(
                 onClick = {
-                    navController.popBackStack()
+                    if (isShowFilter) {
+                        onCloseShowDetail()
+                    }
+                    else {
+                        navController.popBackStack()
+                    }
                 }
             ) {
                 Icon(
@@ -429,7 +440,6 @@ private fun HomeContent(
     state: HistoryStatisticsState,
     collapsedFraction: Float,
     onChangeFilter: (newFilter: HistoryStatisticsFilter) -> Unit,
-    onCloseShowDetail: () -> Unit,
     onClickHistoryLogItem: (item: HistoryLogItemModel) -> Unit
 ) {
 
@@ -454,7 +464,7 @@ private fun HomeContent(
         }
         else {
             when (state.showType) {
-                StatisticsShowType.List -> ListContent(state, onCloseShowDetail, onClickHistoryLogItem)
+                StatisticsShowType.List -> ListContent(state, onClickHistoryLogItem)
                 StatisticsShowType.Chart -> ChartContent(state)
             }
         }
@@ -464,16 +474,15 @@ private fun HomeContent(
 @Composable
 private fun ListContent(
     state: HistoryStatisticsState,
-    onCloseShowDetail: () -> Unit,
     onClickHistoryLogItem: (item: HistoryLogItemModel) -> Unit
 ) {
     if (state.detailId != null) {
-        ListContentByDetail(state, onCloseShowDetail)
+        ListContentByDetail(state)
     }
     else {
         when (state.filter.dataShowType) {
             HistoryDataShowType.ByLog -> ListContentByLog(state, onClickHistoryLogItem)
-            HistoryDataShowType.ByAllData -> ListContentByDetail(state, onCloseShowDetail)
+            HistoryDataShowType.ByAllData -> ListContentByDetail(state)
         }
     }
 }
@@ -505,26 +514,11 @@ private fun ListContentByLog(
 @Composable
 private fun ListContentByDetail(
     state: HistoryStatisticsState,
-    onCloseShowDetail: () -> Unit,
 ) {
     Column(
         Modifier
             .fillMaxSize()
     ) {
-
-        if (state.detailId != null) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                IconButton(
-                    onClick = onCloseShowDetail
-                ) {
-                    Icon(Icons.Outlined.Close, "close")
-                }
-            }
-        }
-
         LazyColumn(
             state = state.listState
         ) {
@@ -562,18 +556,20 @@ private fun HeaderFilter(
             FilterUser(state, onChangeFilter)
         }
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Checkbox(
-                checked = state.filter.dataShowType == HistoryDataShowType.ByLog,
-                onCheckedChange = {
-                    onChangeFilter(
-                        state.filter.copy(dataShowType = if (it) HistoryDataShowType.ByLog else HistoryDataShowType.ByAllData)
-                    )
-                }
-            )
-            Text("按记录时间分组")
+        if (state.detailId == null) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = state.filter.dataShowType == HistoryDataShowType.ByLog,
+                    onCheckedChange = {
+                        onChangeFilter(
+                            state.filter.copy(dataShowType = if (it) HistoryDataShowType.ByLog else HistoryDataShowType.ByAllData)
+                        )
+                    }
+                )
+                Text("按记录时间分组")
+            }
         }
     }
 
@@ -660,6 +656,7 @@ private fun ListGroupHeader(leftText: String) {
     }
 }
 
+// TODO 统计图需要修改
 @Composable
 private fun ChartContent(
     state: HistoryStatisticsState
@@ -770,8 +767,8 @@ private fun HistoryListItem(
                     modifier = Modifier.fillMaxHeight(),
                     verticalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    Text(text = item.title, style = MaterialTheme.typography.bodyLarge)
-                    Text(text = item.subTitle, style = MaterialTheme.typography.bodyMedium)
+                    Text(text = "记录时间：${item.title}", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                    Text(text = "数据范围：${item.subTitle}", style = MaterialTheme.typography.bodySmall)
                 }
 
                 Column(
@@ -781,6 +778,7 @@ private fun HistoryListItem(
                 ) {
 
                     Text(text = item.count.toString(), style = MaterialTheme.typography.headlineMedium)
+                    Text("条数据", style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
