@@ -12,7 +12,7 @@ object DbUtil {
     suspend fun saveData(stepNum: Int?, likeNum: Int?, userName: String, userOrder: Int?, logUserMode: LogModel?) {
         val currentTime = System.currentTimeMillis()
 
-        db.manHoursDB().insertData(
+        db.wxStepDB().insertData(
             WxStepTable(
                 userName = userName,
                 stepNum = stepNum,
@@ -20,6 +20,24 @@ object DbUtil {
                 logTime = currentTime,
                 logTimeString = currentTime.formatDateTime(),
                 userOrder = userOrder,
+                logModel = logUserMode?.name
+            )
+        )
+    }
+
+    suspend fun saveHistoryData(stepNum: Int?, likeNum: Int?, userName: String, userOrder: Int?, logStartTime: Long, dataTime: Long, logUserMode: LogModel?) {
+        val currentTime = System.currentTimeMillis()
+
+        db.wxStepHistoryDB().insertData(
+            WxStepHistoryTable(
+                userName = userName,
+                stepNum = stepNum,
+                likeNum = likeNum,
+                userOrder = userOrder,
+                logStartTime = logStartTime,
+                logEndTime = currentTime,
+                dataTime = dataTime,
+                dataTimeString = dataTime.formatDateTime(),
                 logModel = logUserMode?.name
             )
         )

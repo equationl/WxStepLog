@@ -23,8 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsChartData
-import com.equationl.wxsteplog.util.DateTimeUtil
+import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsHistoryChartData
 import com.equationl.wxsteplog.util.Utils.appendCompat
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisGuidelineComponent
@@ -74,8 +73,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @Composable
-fun LineSeriesChart(
-    dataList: List<StatisticsChartData>
+fun HistoryLineSeriesChart(
+    dataList: List<StatisticsHistoryChartData>
 ) {
     // Log.i("el", "LineSeriesChart: $dataList")
     var chartHeight by remember { mutableFloatStateOf(200f) }
@@ -143,11 +142,11 @@ fun LineSeriesChart(
             bottomAxis = HorizontalAxis.rememberBottom(
                 itemPlacer = HorizontalAxis.ItemPlacer.segmented(),
                 valueFormatter =  { _, x, _ ->
-                    DateTimeUtil.getTimeFromHalfHourIndex(x.toInt())
+                    dataList.first().xLabelShort[x.toInt()]
                 },
                 labelRotationDegrees = 90f,
             ),
-            marker = rememberMarker(dataList.size),
+            marker = rememberMarker(dataList.size, dataList.first().xLabelFull),
             layerPadding = cartesianLayerPadding(scalableStartPadding = 16.dp, scalableEndPadding = 16.dp),
             legend = rememberLegend(dataList),
         ),
@@ -158,7 +157,7 @@ fun LineSeriesChart(
 
 // 图例
 @Composable
-private fun rememberLegend(dataList: List<StatisticsChartData>): Legend<CartesianMeasuringContext, CartesianDrawingContext> {
+private fun rememberLegend(dataList: List<StatisticsHistoryChartData>): Legend<CartesianMeasuringContext, CartesianDrawingContext> {
     val labelComponent = rememberTextComponent(vicoTheme.textColor)
     return rememberVerticalLegend(
         items =
@@ -188,8 +187,10 @@ private fun rememberLegend(dataList: List<StatisticsChartData>): Legend<Cartesia
 @Composable
 private fun rememberMarker(
     lineCount: Int,
+    xLabel: List<String>,
     labelPosition: DefaultCartesianMarker.LabelPosition = DefaultCartesianMarker.LabelPosition.Top,
     showIndicator: Boolean = true,
+
 ): CartesianMarker {
     val labelBackgroundShape = markerCorneredShape(Corner.FullyRounded)
     val labelBackground =
@@ -258,7 +259,7 @@ private fun rememberMarker(
                         for (target in targets) {
                             val data = (target as LineCartesianLayerMarkerTarget)
                             data.points.forEachIndexed { index, point ->
-                                val text = "${DateTimeUtil.getTimeFromHalfHourIndex(point.entry.x.toInt())}: ${point.entry.y.toInt()}"
+                                val text = "${xLabel[point.entry.x.toInt()]}: ${point.entry.y.toInt()}"
                                 appendCompat(
                                     text,
                                     ForegroundColorSpan(point.color),

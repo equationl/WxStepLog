@@ -34,7 +34,7 @@ object OverManager : StepListener {
     private var viewMainOver: ViewMainOverBinding? = null
     private var setting: WxStepLogSetting? = null
     private var dataListAdapter: FloatViewStepDataAdapter? = null
-    private var dao = DbUtil.db.manHoursDB()
+    private var dao = DbUtil.db.wxStepDB()
 
     // 统计数据过滤参数
     private var isFilterUser: Boolean = true
@@ -55,20 +55,31 @@ object OverManager : StepListener {
             parent.assistsWindowLayoutWrapperBinding.tvTitle.text = when(showType) {
                 ShowType.LOG -> "记录数据"
                 ShowType.FIND_USER -> "查找用户名"
+                ShowType.SINGLE_LOG -> "读取数据"
             }
             llOption.isVisible = true
             llLog.isVisible = false
             btnCloseLog.isVisible = false
 
-            if (showType == ShowType.FIND_USER) {
-                btnLogWxStep.visibility = View.GONE
-                btnFindUserName.visibility = View.VISIBLE
-                btnShowDataList.visibility = View.GONE
-            }
-            else {
-                btnLogWxStep.visibility = View.VISIBLE
-                btnFindUserName.visibility = View.GONE
-                btnShowDataList.visibility = View.VISIBLE
+            when (showType) {
+                ShowType.LOG -> {
+                    btnLogWxStep.visibility = View.VISIBLE
+                    btnFindUserName.visibility = View.GONE
+                    btnShowDataList.visibility = View.VISIBLE
+                    btnLogHistory.visibility = View.GONE
+                }
+                ShowType.FIND_USER -> {
+                    btnLogWxStep.visibility = View.GONE
+                    btnFindUserName.visibility = View.VISIBLE
+                    btnShowDataList.visibility = View.GONE
+                    btnLogHistory.visibility = View.GONE
+                }
+                ShowType.SINGLE_LOG -> {
+                    btnLogHistory.visibility = View.VISIBLE
+                    btnLogWxStep.visibility = View.GONE
+                    btnFindUserName.visibility = View.GONE
+                    btnShowDataList.visibility = View.GONE
+                }
             }
 
             btnLogWxStep.setOnClickListener {
@@ -89,6 +100,11 @@ object OverManager : StepListener {
             btnFindUserName.setOnClickListener {
                 beginStart(this)
                 StepManager.execute(FindUserNameStep::class.java, StepTag.STEP_1, begin = true)
+            }
+
+            btnLogHistory.setOnClickListener {
+                beginStart(this)
+                StepManager.execute(LogWxHistoryStep::class.java, StepTag.STEP_1, begin = true)
             }
 
             btnStop.setOnClickListener {
@@ -174,6 +190,20 @@ object OverManager : StepListener {
     fun showFindUser() {
         AssistsWindowManager.removeView(viewMainOver?.root)
         viewMainOver = createView(showType = ShowType.FIND_USER)
+        val width = ScreenUtils.getScreenWidth() - 60
+        val height = SizeUtils.dp2px(300f)
+        viewMainOver?.root?.layoutParams?.width = width
+        viewMainOver?.root?.layoutParams?.height = height
+        viewMainOver?.root?.minWidth = (ScreenUtils.getScreenWidth() * 0.6).toInt()
+        viewMainOver?.root?.minHeight = height
+        viewMainOver?.root?.setCenter()
+        AssistsWindowManager.addAssistsWindowLayout(viewMainOver?.root)
+    }
+
+    fun showSingleLog() {
+        Constants.logWxHistoryStepStartTime = System.currentTimeMillis()
+        AssistsWindowManager.removeView(viewMainOver?.root)
+        viewMainOver = createView(showType = ShowType.SINGLE_LOG)
         val width = ScreenUtils.getScreenWidth() - 60
         val height = SizeUtils.dp2px(300f)
         viewMainOver?.root?.layoutParams?.width = width
@@ -280,6 +310,7 @@ object OverManager : StepListener {
 
     enum class ShowType {
         LOG,
-        FIND_USER
+        FIND_USER,
+        SINGLE_LOG
     }
 }

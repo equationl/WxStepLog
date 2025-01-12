@@ -2,56 +2,50 @@ package com.equationl.wxsteplog.ui.view.home.screen
 
 import android.content.Intent
 import android.content.pm.ActivityInfo
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Analytics
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.equationl.wxsteplog.R
 import com.equationl.wxsteplog.SettingGuideActivity
 import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.constants.Route
-import com.equationl.wxsteplog.model.LogSettingMode
-import com.equationl.wxsteplog.model.WxStepLogSetting
-import com.equationl.wxsteplog.model.toLogUserMode
-import com.equationl.wxsteplog.step.OverManager
 import com.equationl.wxsteplog.ui.LocalNavController
-import com.equationl.wxsteplog.ui.view.home.widget.HomeSettingContent
 import com.equationl.wxsteplog.util.Utils
-import com.equationl.wxsteplog.util.datastore.DataKey
-import com.equationl.wxsteplog.util.datastore.DataStoreUtils
-import com.equationl.wxsteplog.util.fromJsonList
-import com.equationl.wxsteplog.util.toJson
 import com.ven.assists.Assists
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @Composable
 fun HomeScreen() {
@@ -80,33 +74,6 @@ fun HomeScreen() {
 
 @Composable
 private fun HomePage(isAccessibilityServiceEnabled: MutableState<Boolean>) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var startState by remember { mutableIntStateOf(1) }
-    val logUserModel = remember { mutableStateOf(LogSettingMode.Multiple) }
-    val userNameList = remember { mutableStateListOf<String>() }
-    val intervalTime = remember { mutableStateOf("60000") }
-    val isRandomInterval = remember { mutableStateOf(false) }
-    val isAllModelSpecialUser = remember { mutableStateOf(false) }
-    val randomIntervalValue = remember { mutableStateOf("30000") }
-    val showDaraFilterUserName = remember { mutableStateOf("") }
-
-    LaunchedEffect(startState) {
-        scope.launch {
-            val userNameListString = DataStoreUtils.getSyncData(DataKey.LOG_MULTIPLE_USER_NAME, "")
-            userNameList.clear()
-            userNameList.addAll(userNameListString.fromJsonList(String::class.java))
-            intervalTime.value = DataStoreUtils.getSyncData(DataKey.LOG_INTERVAL_TIME, "60000")
-            isRandomInterval.value = DataStoreUtils.getSyncData(DataKey.LOG_IS_INTERVAL_TIME_RANDOM_RANGE, false)
-            isAllModelSpecialUser.value = DataStoreUtils.getSyncData(DataKey.LOG_IS_ALL_WITH_SPECIAL_USER, false)
-            randomIntervalValue.value = DataStoreUtils.getSyncData(DataKey.LOG_INTERVAL_TIME_RANDOM_RANGE, "30000")
-            showDaraFilterUserName.value = DataStoreUtils.getSyncData(DataKey.SHOW_DATA_FILTER_USER, "")
-            logUserModel.value = DataStoreUtils.getSyncData(DataKey.LOG_USER_MODE, LogSettingMode.Multiple.name).toLogUserMode() ?: LogSettingMode.Multiple
-            Constants.wxPkgName.value = DataStoreUtils.getSyncData(DataKey.WX_PKG_NAME, Constants.wxPkgName.value)
-            Constants.wxLauncherPkg.value = DataStoreUtils.getSyncData(DataKey.WX_LAUNCHER_PKG_NAME, Constants.wxLauncherPkg.value)
-        }
-    }
-
     LifecycleResumeEffect(Unit) {
         isAccessibilityServiceEnabled.value = Assists.isAccessibilityServiceEnabled()
 
@@ -115,71 +82,11 @@ private fun HomePage(isAccessibilityServiceEnabled: MutableState<Boolean>) {
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        if (isAccessibilityServiceEnabled.value) {
-            HomeSettingContent(logUserModel, userNameList, intervalTime, isRandomInterval, randomIntervalValue, showDaraFilterUserName, isAllModelSpecialUser)
-        }
-
-        OutlinedButton (
-            onClick = {
-                if (Assists.isAccessibilityServiceEnabled()) {
-                    if (
-                        (logUserModel.value == LogSettingMode.Multiple || (logUserModel.value == LogSettingMode.All && isAllModelSpecialUser.value)) &&
-                        userNameList.none { it.isNotBlank() }
-                    ) {
-                        Toast.makeText(context, "请至少添加一个要查找的用户名！", Toast.LENGTH_SHORT).show()
-                        return@OutlinedButton
-                    }
-                    if (intervalTime.value.isBlank() || intervalTime.value.toLongOrNull() == null) {
-                        Toast.makeText(context, "请输入间隔时间", Toast.LENGTH_SHORT).show()
-                        return@OutlinedButton
-                    }
-                    if (isRandomInterval.value && (randomIntervalValue.value.isBlank()) || randomIntervalValue.value.toLongOrNull() == null) {
-                        Toast.makeText(context, "请输入随机间隔时间", Toast.LENGTH_SHORT).show()
-                        return@OutlinedButton
-                    }
-
-                    scope.launch {
-                        DataStoreUtils.putSyncData(DataKey.LOG_USER_MODE, logUserModel.value.name)
-                        DataStoreUtils.putSyncData(DataKey.LOG_MULTIPLE_USER_NAME, userNameList.filter { it.isNotBlank() }.toList().toJson())
-                        DataStoreUtils.putSyncData(DataKey.LOG_INTERVAL_TIME, intervalTime.value)
-                        DataStoreUtils.putSyncData(DataKey.LOG_IS_INTERVAL_TIME_RANDOM_RANGE, isRandomInterval.value)
-                        DataStoreUtils.putSyncData(DataKey.LOG_INTERVAL_TIME_RANDOM_RANGE, randomIntervalValue.value)
-                        DataStoreUtils.putSyncData(DataKey.LOG_IS_ALL_WITH_SPECIAL_USER, isAllModelSpecialUser.value)
-                        DataStoreUtils.putSyncData(DataKey.SHOW_DATA_FILTER_USER, showDaraFilterUserName.value)
-                        DataStoreUtils.putSyncData(DataKey.WX_PKG_NAME, Constants.wxPkgName.value)
-                        DataStoreUtils.putSyncData(DataKey.WX_LAUNCHER_PKG_NAME, Constants.wxLauncherPkg.value)
-
-                        Constants.showDataFilterUserName = showDaraFilterUserName.value
-
-                        withContext(Dispatchers.Main) {
-                            OverManager.show(
-                                WxStepLogSetting(
-                                    userNameList = userNameList.toList(),
-                                    logUserMode = logUserModel.value,
-                                    intervalTime = intervalTime.value.toLong(),
-                                    isRandomInterval = isRandomInterval.value,
-                                    randomIntervalValue = randomIntervalValue.value.toLong(),
-                                    isAllModelSpecialUser = isAllModelSpecialUser.value
-                                )
-                            )
-                        }
-
-                        startState++
-                    }
-                } else {
-                    Assists.openAccessibilitySetting()
-                    context.startActivity(Intent(context, SettingGuideActivity::class.java))
-                }
-            }
-        ) {
-            Text(if (isAccessibilityServiceEnabled.value) "开始记录" else "打开无障碍服务")
-        }
-
+    if (isAccessibilityServiceEnabled.value) {
+        HomeContent()
+    }
+    else {
+        OpenAccessibilityServiceContent()
     }
 }
 
@@ -195,11 +102,121 @@ private fun TopBar() {
         actions = {
             IconButton(
                 onClick = {
-                    navController.navigate(Route.STATISTIC)
+                    navController.navigate(Route.GLOBAL_SETTING)
                 }
             ) {
-                Icon(Icons.Outlined.Analytics, contentDescription = "menu")
+                Icon(Icons.Outlined.Settings, contentDescription = "setting")
             }
         }
     )
+}
+
+@Composable
+private fun OpenAccessibilityServiceContent() {
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 32.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("本程序基于无障碍服务实现自动操作及其记录数据，如需使用请先打开无障碍服务", style = MaterialTheme.typography.bodySmall)
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(
+            onClick = {
+                Assists.openAccessibilitySetting()
+                context.startActivity(Intent(context, SettingGuideActivity::class.java))
+            }
+        ) {
+            Text("打开无障碍服务")
+        }
+    }
+}
+
+@Composable
+private fun HomeContent() {
+    val navController = LocalNavController.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 32.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("提示：请选择一个功能后开始运行", style = MaterialTheme.typography.bodySmall)
+        Spacer(Modifier.height(16.dp))
+        val selectedOption = remember { mutableIntStateOf(0) }
+        Column(Modifier.selectableGroup()) {
+            Constants.functionList.forEachIndexed { index, title ->
+                Row(
+                    Modifier.fillMaxWidth()
+                        .height(56.dp)
+                        .selectable(
+                            selected = (index == selectedOption.intValue),
+                            onClick = { selectedOption.intValue = index },
+                            role = Role.RadioButton
+                        )
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = (index == selectedOption.intValue),
+                        onClick = null // null recommended for accessibility with screenreaders
+                    )
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(start = 16.dp)
+                    )
+                }
+            }
+        }
+        Card {
+            Column(
+                modifier = Modifier.padding(8.dp)
+            ) {
+                Text(getHelpText(index = selectedOption.intValue), style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        Spacer(Modifier.height(32.dp))
+        OutlinedButton(
+            onClick = {
+                when (selectedOption.intValue) {
+                    0 -> {
+                        Route.SINGLE_LOG
+                    }
+                    1 -> {
+                        Route.CONTINUOUS_LOG
+                    }
+                    else -> {
+                        Route.SINGLE_LOG
+                    }
+                }.let {
+                    navController.navigate(it)
+                }
+            }
+        ) {
+            Text("开始运行")
+        }
+    }
+
+}
+
+private fun getHelpText(index: Int): String {
+    return when (index) {
+        0 -> {
+            "读取 “微信运动” 消息列表中的历史运动数据，一次性读取，读取完毕后自动停止。"
+        }
+        1 -> {
+            "后台连续记录当前运动排行中的实时数据，开启后会一直运行，直至手动停止。"
+        }
+        else -> {
+            ""
+        }
+    }
 }

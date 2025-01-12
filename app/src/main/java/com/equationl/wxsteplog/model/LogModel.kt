@@ -8,5 +8,7 @@ enum class LogModel {
     /** 全部用户 */
     ALL,
     /** 导入数据 */
-    Import
+    Import,
+    /** 读取到的历史数据  */
+    HistoryLog,
 }

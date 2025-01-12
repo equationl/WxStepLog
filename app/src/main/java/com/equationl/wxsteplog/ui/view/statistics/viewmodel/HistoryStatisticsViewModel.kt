@@ -4,20 +4,23 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.icu.text.Collator
-import android.icu.util.TimeZone
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.db.DbUtil.DATABASE_FILE_NAME
 import com.equationl.wxsteplog.db.WxStepDB
-import com.equationl.wxsteplog.db.WxStepTable
+import com.equationl.wxsteplog.db.WxStepHistoryTable
 import com.equationl.wxsteplog.model.StaticsScreenModel
-import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsChartData
-import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsFilter
+import com.equationl.wxsteplog.ui.view.statistics.state.HistoryDataShowType
+import com.equationl.wxsteplog.ui.view.statistics.state.HistoryLogItemModel
+import com.equationl.wxsteplog.ui.view.statistics.state.HistoryStatisticsFilter
+import com.equationl.wxsteplog.ui.view.statistics.state.HistoryStatisticsState
+import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsHistoryChartData
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowRange
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowType
-import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsState
+import com.equationl.wxsteplog.util.DateTimeUtil
 import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
 import com.equationl.wxsteplog.util.ResolveDataUtil
 import com.equationl.wxsteplog.util.Utils
@@ -34,13 +37,13 @@ import javax.inject.Inject
 
 
 @HiltViewModel
-class StatisticsViewModel @Inject constructor(
+class HistoryStatisticsViewModel @Inject constructor(
     private val db: WxStepDB
 ): ViewModel() {
 
 
     private val _uiState = MutableStateFlow(
-        StatisticsState()
+        HistoryStatisticsState()
     )
 
     val uiState = _uiState.asStateFlow()
@@ -85,7 +88,7 @@ class StatisticsViewModel @Inject constructor(
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = "text/comma-separated-values"
-            putExtra(Intent.EXTRA_TITLE, "wxStepLog_${System.currentTimeMillis().formatDateTime("yyyy_MM_dd_HH_mm_ss")}.csv")
+            putExtra(Intent.EXTRA_TITLE, "wxStepHistoryLog_${System.currentTimeMillis().formatDateTime("yyyy_MM_dd_HH_mm_ss")}.csv")
         }
         intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         intent.setFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
@@ -118,7 +121,8 @@ class StatisticsViewModel @Inject constructor(
     fun exportData(
         result: ActivityResult,
         context: Context,
-        filter: StatisticsFilter?,
+        filter: HistoryStatisticsFilter?,
+        detailId: Long?,
         onFinish: () -> Unit,
         onProgress: (progress: Float) -> Unit
     ) {
@@ -146,17 +150,27 @@ class StatisticsViewModel @Inject constructor(
 
             LogUtil.i("el", "export with filter: $filter")
             val dataList = if (filter == null) {
-                db.wxStepDB().queryAllData()
+                if (detailId == null) {
+                    db.wxStepHistoryDB().queryAllData()
+                }
+                else {
+                    db.wxStepHistoryDB().queryAllDataByLogStartTime(detailId)
+                }
             } else {
-                // val offset = TimeZone.getDefault().rawOffset
-                if (filter.isFilterUser && filter.user != null)
-                    db.wxStepDB().queryRangeDataListByUserName(_uiState.value.filter.showRange.start, _uiState.value.filter.showRange.end, filter.user, 1, Int.MAX_VALUE)
-                else
-                    db.wxStepDB().queryRangeDataList(_uiState.value.filter.showRange.start, _uiState.value.filter.showRange.end, 1, Int.MAX_VALUE)
+                val userName = if (filter.isFilterUser && filter.user != null) filter.user else "%"
+                if (detailId == null) {
+                    db.wxStepHistoryDB().queryRangeDataList(_uiState.value.filter.showRange.start, _uiState.value.filter.showRange.end, userName)
+                }
+                else {
+                    db.wxStepHistoryDB().queryRangeDataListByLogStartTime(_uiState.value.filter.showRange.start, _uiState.value.filter.showRange.end, detailId, userName)
+                }
             }
 
+            // 表头
+            outputStream.write(Constants.WX_HISTORY_LOG_DATA_CSV_HEADER.toByteArray())
+
             dataList.forEachIndexed { index, row ->
-                outputStream.write("${row.id},${row.userName},${row.stepNum},${row.likeNum},${row.logTimeString},${row.logTime},${row.userOrder},${row.logModel}\n".toByteArray())
+                outputStream.write("${row.id},${row.userName},${row.stepNum},${row.likeNum},${row.userOrder},${row.logStartTime},${row.logEndTime},${row.dataTime},${row.dataTimeString},${row.logModel}\n".toByteArray())
                 onProgress((index + 1).toFloat() / dataList.size)
             }
             outputStream.flush()
@@ -165,7 +179,6 @@ class StatisticsViewModel @Inject constructor(
                 Toast.makeText(context, "导出完成！", Toast.LENGTH_SHORT).show()
                 onFinish()
             }
-
         }
     }
 
@@ -217,7 +230,7 @@ class StatisticsViewModel @Inject constructor(
         val data = result.data
         val uri = data?.data
 
-        var hasConflict: Boolean
+        var importResult: Result<Boolean>
 
         if (uri == null) {
             Toast.makeText(context, "导入错误：uri is null", Toast.LENGTH_SHORT).show()
@@ -237,18 +250,26 @@ class StatisticsViewModel @Inject constructor(
             }
 
             buffer.useLines {
-                hasConflict = ResolveDataUtil.importDataFromCsv(it, db, onProgress)
+                importResult = ResolveDataUtil.importHistoryDataFromCsv(it, db, onProgress)
             }
 
             withContext(Dispatchers.Main) {
-                if (hasConflict) {
-                    Toast.makeText(context, "导入完成，但是部分数据由于某些错误没有导入", Toast.LENGTH_LONG).show()
-                    onFinish()
-                }
-                else {
-                    Toast.makeText(context, "导入成功", Toast.LENGTH_SHORT).show()
-                    onFinish()
-                }
+                importResult.fold(
+                    onSuccess = {
+                        if (it) {
+                            Toast.makeText(context, "导入完成，但是部分数据由于某些错误没有导入", Toast.LENGTH_LONG).show()
+                            onFinish()
+                        }
+                        else {
+                            Toast.makeText(context, "导入成功", Toast.LENGTH_SHORT).show()
+                            onFinish()
+                        }
+                    },
+                    onFailure = {
+                        Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
+                        onFinish()
+                    }
+                )
             }
 
             loadData()
@@ -256,8 +277,39 @@ class StatisticsViewModel @Inject constructor(
 
     }
 
-    fun onChangeFilter(newFilter: StatisticsFilter) {
+    fun onChangeFilter(newFilter: HistoryStatisticsFilter) {
         _uiState.update { it.copy(filter = newFilter) }
+
+        viewModelScope.launch {
+            loadData()
+        }
+    }
+
+    fun onCloseShowDetail() {
+        _uiState.update {
+            it.copy(
+                detailId = null,
+                filter = it.filter.copy(showRange = DateTimeUtil.getCurrentDayRange())
+            )
+        }
+
+        viewModelScope.launch {
+            loadData()
+        }
+    }
+
+    fun onClickHistoryLogItem(item: HistoryLogItemModel) {
+        _uiState.update {
+            it.copy(
+                detailId = item.id,
+                filter = it.filter.copy(
+                    showRange = StatisticsShowRange(
+                        item.rawData.startTime,
+                        item.rawData.endTime
+                    )
+                )
+            )
+        }
 
         viewModelScope.launch {
             loadData()
@@ -266,8 +318,9 @@ class StatisticsViewModel @Inject constructor(
 
     private suspend fun loadData(isFirstLoading: Boolean = false) = withContext(Dispatchers.IO) {
         _uiState.update { it.copy(isLoading = true) }
+        val dao = db.wxStepHistoryDB()
 
-        val userList = db.wxStepDB().getCurrentUserList().sortedWith { o1, o2 -> Collator.getInstance(Locale.CHINESE).compare(o1, o2) }
+        val userList = dao.getCurrentUserList().sortedWith { o1, o2 -> Collator.getInstance(Locale.CHINESE).compare(o1, o2) }
 
         var filter = _uiState.value.filter
         if (isFirstLoading && (filter.user == null || !filter.isFilterUser)) { // 默认筛选第一个用户
@@ -275,36 +328,60 @@ class StatisticsViewModel @Inject constructor(
             _uiState.update { it.copy(filter = filter) }
         }
 
-        // 需要按时区偏移一下
-        val offset = TimeZone.getDefault().rawOffset
-        val rawDataList = if (filter.isFilterUser && filter.user != null)
-            db.wxStepDB().queryRangeDataListByUserName(_uiState.value.filter.showRange.start - offset, _uiState.value.filter.showRange.end - offset, filter.user!!, 1, Int.MAX_VALUE)
-        else
-            db.wxStepDB().queryRangeDataList(_uiState.value.filter.showRange.start - offset, _uiState.value.filter.showRange.end - offset, 1, Int.MAX_VALUE)
+        if (_uiState.value.detailId != null || _uiState.value.filter.dataShowType == HistoryDataShowType.ByAllData) { // 获取全部数据
+            // 需要按时区偏移一下
+            val offset = 0 //TimeZone.getDefault().rawOffset
+            val filterUserName = if (filter.isFilterUser && filter.user != null) filter.user!! else "%"
+            val rawDataList = if (_uiState.value.detailId != null)
+                dao.queryRangeDataListByLogStartTime(
+                    startTime = _uiState.value.filter.showRange.start - offset,
+                    endTime = _uiState.value.filter.showRange.end - offset,
+                    logStartTime = _uiState.value.detailId!!,
+                    userName = filterUserName
+                )
+            else
+                dao.queryRangeDataList(
+                    startTime = _uiState.value.filter.showRange.start - offset,
+                    endTime = _uiState.value.filter.showRange.end - offset,
+                    userName = filterUserName
+                )
 
-        // 统计图需要平滑数据，所以不能折叠
-        if (_uiState.value.showType == StatisticsShowType.Chart) {
-            filter = filter.copy(isFoldData = false)
+            val resolveResult = resolveData(rawDataList)
+
+            var charList = mapOf<String, StatisticsHistoryChartData>()
+            if (_uiState.value.showType == StatisticsShowType.Chart) {
+                charList = ResolveDataUtil.resolveHistoryChartData(resolveResult)
+            }
+
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    dataList = resolveResult,
+                    chartData = charList,
+                    userNameList = userList
+                )
+            }
         }
-
-        val resolveResult = resolveData(rawDataList, filter)
-
-        var charList = mapOf<String, List<StatisticsChartData>>()
-        if (_uiState.value.showType == StatisticsShowType.Chart) {
-            charList = ResolveDataUtil.resolveChartData(resolveResult)
-        }
-
-        _uiState.update {
-            it.copy(
-                isLoading = false,
-                dataList = resolveResult,
-                chartData = charList,
-                userNameList = userList
-            )
+        else { // 获取按记录时间的数据
+            val logStartTimeList = dao.getLogStartTimeList()
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    logItemList = logStartTimeList.map { item ->
+                        HistoryLogItemModel(
+                            id = item.logStartTime,
+                            title = item.logStartTime.formatDateTime(),
+                            subTitle = "${item.startTime.formatDateTime("yyyy-MM-dd")} - ${item.endTime.formatDateTime("yyyy-MM-dd")}",
+                            count = item.count,
+                            rawData = item
+                        )
+                    }
+                )
+            }
         }
     }
 
-    private fun resolveData(rawDataList: List<WxStepTable>, filter: StatisticsFilter): List<StaticsScreenModel> {
-        return ResolveDataUtil.rawDataToStaticsModel(rawDataList, filter.isFoldData)
+    private fun resolveData(rawDataList: List<WxStepHistoryTable>): List<StaticsScreenModel> {
+        return ResolveDataUtil.rawHistoryDataToStaticsModel(rawDataList, _uiState.value.detailId != null)
     }
 }
