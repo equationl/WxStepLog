@@ -73,6 +73,32 @@ object DateTimeUtil {
         return cal.timeInMillis
     }
 
+    /**
+     * 获取本周第 [dayOfWeek] 天的起始时间
+     *
+     * @param [dayOfWeek] 本周的第几天（汉字）
+     * */
+    fun getWeeOfWeekDay(dayOfWeek: String): Long {
+        val dayOfWeekInt = when (dayOfWeek.replace("周", "")) {
+            "一" -> 1
+            "二" -> 2
+            "三" -> 3
+            "四" -> 4
+            "五" -> 5
+            "六" -> 6
+            "日" -> 7
+            else -> 1
+        }
+
+        val cal = Calendar.getInstance()
+        cal[Calendar.DAY_OF_WEEK] = dayOfWeekInt
+        cal[Calendar.HOUR_OF_DAY] = 0
+        cal[Calendar.SECOND] = 0
+        cal[Calendar.MINUTE] = 0
+        cal[Calendar.MILLISECOND] = 0
+        return cal.timeInMillis
+    }
+
     fun getCurrentDayRange(): StatisticsShowRange {
         val start = getWeeOfToday()
         val end = start + DAY_MILL_SECOND_TIME
@@ -103,6 +129,7 @@ object DateTimeUtil {
      * 1 -> "昨天 22:40"
      * 2 -> "1月5日 晚上22:40"
      * 3 -> "2024年12月30日 下午17:21"
+     * 4 -> "周四 22:40"
      * */
     fun getTimeFromMsgListHeader(dateTimeText: String): Long {
         val textList = dateTimeText.split(" ")
@@ -115,6 +142,8 @@ object DateTimeUtil {
 
             return if (firstItem.contains("昨天")) { // 情况 1
                 getWeeOfYesterday()
+            } else if (firstItem.contains("周")) { // 情况 4
+                getWeeOfWeekDay(firstItem)
             } else {
                 if (firstItem.contains("年")) { // 情况 3
                     firstItem.toTimestamp("yyyy年M月d日")

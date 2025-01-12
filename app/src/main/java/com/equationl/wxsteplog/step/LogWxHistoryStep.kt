@@ -116,7 +116,12 @@ class LogWxHistoryStep : StepImpl() {
                     Log.i("el", "onImpl: className = ${cardSubItemList?.firstOrNull()?.className }, size = ${cardSubItemList?.size}")
                     if (cardSubItemList?.firstOrNull()?.className == "android.widget.TextView" && cardSubItemList.size >= 2) {
                         val dateTimeText = cardSubItemList.first()!!.text.toString()
-                        val dateTime = DateTimeUtil.getTimeFromMsgListHeader(dateTimeText)
+                        val dateTime =  try {
+                            DateTimeUtil.getTimeFromMsgListHeader(dateTimeText)
+                        } catch (tr: Throwable) {
+                            OverManager.log("$dateTimeText 无法解析，跳过本次循环")
+                            return@forEach
+                        }
                         if (alreadyLogDate.contains(dateTime)) {
                             OverManager.log("$dateTimeText 已记录，跳过")
                         }
