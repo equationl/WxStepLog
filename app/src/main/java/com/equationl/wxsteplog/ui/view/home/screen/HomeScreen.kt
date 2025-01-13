@@ -45,6 +45,8 @@ import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.constants.Route
 import com.equationl.wxsteplog.ui.LocalNavController
 import com.equationl.wxsteplog.util.Utils
+import com.equationl.wxsteplog.util.datastore.DataKey
+import com.equationl.wxsteplog.util.datastore.DataStoreUtils
 import com.ven.assists.Assists
 
 @Composable
@@ -54,6 +56,11 @@ fun HomeScreen() {
 
     LaunchedEffect(Unit) {
         Utils.changeScreenOrientation(context, ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
+
+        Constants.wxPkgName.value = DataStoreUtils.getSyncData(DataKey.WX_PKG_NAME, Constants.wxPkgName.value)
+        Constants.wxLauncherPkg.value = DataStoreUtils.getSyncData(DataKey.WX_LAUNCHER_PKG_NAME, Constants.wxLauncherPkg.value)
+        Constants.runStepIntervalTime.intValue = DataStoreUtils.getSyncData(DataKey.RUN_STEP_INTERVAL_TIME, Constants.runStepIntervalTime.intValue)
+        Constants.showDetailLog.value = DataStoreUtils.getSyncData(DataKey.SHOW_DETAIL_LOG, Constants.showDetailLog.value)
     }
 
     Scaffold(

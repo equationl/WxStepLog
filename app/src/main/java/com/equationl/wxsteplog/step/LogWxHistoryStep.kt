@@ -29,6 +29,7 @@ class LogWxHistoryStep : StepImpl() {
     override fun onImpl(collector: StepCollector) {
         collector.next(StepTag.STEP_1) { step ->
             val setting = step.data
+            OverManager.log("开始运行", isForceShow = true)
             OverManager.log("当前参数：$setting")
             OverManager.log("启动微信")
             alreadyLogDate.clear()
@@ -39,7 +40,7 @@ class LogWxHistoryStep : StepImpl() {
                 try {
                     Assists.service?.startActivity(this)
                 } catch (e: ActivityNotFoundException) {
-                    OverManager.log("无法启动【微信】，你安装微信了吗？")
+                    OverManager.log("无法启动【微信】，你安装微信了吗？", isForceShow = true)
                     return@next Step.none
                 }
             }
@@ -61,7 +62,7 @@ class LogWxHistoryStep : StepImpl() {
             }
 
             if (step.repeatCount == 5) {
-                OverManager.log("已重复 5 次依旧没有找到【微信】，返回第一步")
+                OverManager.log("已重复 5 次依旧没有找到【微信】，返回第一步", isForceShow = true)
                 return@next Step.get(StepTag.STEP_1, data = setting)
             }
 
@@ -85,7 +86,7 @@ class LogWxHistoryStep : StepImpl() {
             }
 
             if (step.repeatCount == 5) {
-                OverManager.log("已重复 5 次依旧没有找到【微信运动】，返回第一步")
+                OverManager.log("已重复 5 次依旧没有找到【微信运动】，返回第一步", isForceShow = true)
                 return@next Step.get(StepTag.STEP_1, data = setting)
             }
 
@@ -97,7 +98,7 @@ class LogWxHistoryStep : StepImpl() {
             var listView = getRecyclerView()
 
             if (listView == null) {
-                OverManager.log("没有找到列表，返回第一步")
+                OverManager.log("没有找到列表，返回第一步", isForceShow = true)
                 return@next Step.get(StepTag.STEP_1, data = setting)
             }
 
@@ -105,7 +106,7 @@ class LogWxHistoryStep : StepImpl() {
 
             while (true) {
                 if (runningErrorCount > 5) {
-                    OverManager.log("累计错误达 $runningErrorCount 次，跳出循环读取")
+                    OverManager.log("累计错误达 $runningErrorCount 次，跳出循环读取", isForceShow = true)
                     break
                 }
 
@@ -128,13 +129,13 @@ class LogWxHistoryStep : StepImpl() {
                         else {
                             val clickAbleItem = cardSubItemList[1]!!.getNodes().first { it.isClickable }
                             clickAbleItem.click()
-                            delay(1000)
+                            delay(Constants.runStepIntervalTime.intValue.toLong())
                             OverManager.log("开始记录 $dateTimeText 的数据")
                             val result = getDetailData(dateTime)
                             if (!result) {
                                 return@next Step.none
                             }
-                            delay(1000)
+                            delay(Constants.runStepIntervalTime.intValue.toLong())
                         }
                     }
                     else {
@@ -145,11 +146,11 @@ class LogWxHistoryStep : StepImpl() {
                 val endFlag = !(listView?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD) ?: false)
 
                 if (endFlag) {
-                    OverManager.log("已到达最后一页，程序结束，请关闭本窗口后自行返回 APP")
+                    OverManager.log("已到达最后一页，程序结束，请关闭本窗口后自行返回 APP", isForceShow = true)
                     return@next Step.none
                 }
 
-                delay(1000)
+                delay(Constants.runStepIntervalTime.intValue.toLong())
                 listView = getRecyclerView()
                 if (listView == null) {
                     runningErrorCount++
@@ -171,14 +172,14 @@ class LogWxHistoryStep : StepImpl() {
         for (node in nodes) {
             if (node?.text?.contains("正在加载") == true) {
                 OverManager.log("正在加载中，等待……")
-                delay(1000)
+                delay(Constants.runStepIntervalTime.intValue.toLong())
                 return getDetailData(dateTime)
             }
         }
 
         for (node in nodes) {
             if (node?.text?.contains("消息已过期") == true) {
-                OverManager.log("消息已过期，结束运行，请关闭本窗口后自行返回 APP")
+                OverManager.log("消息已过期，结束运行，请关闭本窗口后自行返回 APP", isForceShow = true)
                 return false
             }
         }
@@ -212,8 +213,10 @@ class LogWxHistoryStep : StepImpl() {
         var runningErrorCount = 0
 
         while (true) {
+            // TODO 这里是按照顺序读取的数据，可能会出现列表前几项已经消息过期，但是实际上本页的剩下消息并未过期，导致漏掉数据
+
             if (runningErrorCount > 5) {
-                OverManager.log("累计错误达 $runningErrorCount 次，跳出循环读取")
+                OverManager.log("累计错误达 $runningErrorCount 次，跳出循环读取", isForceShow = true)
                 break
             }
 
@@ -266,7 +269,7 @@ class LogWxHistoryStep : StepImpl() {
 
             OverManager.log("本页已记录完成，滚动到下一页")
             listView?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
-            delay(1000)
+            delay(Constants.runStepIntervalTime.intValue.toLong())
 
             // 这里需要重新拿一下 listview 对象，不然不知道为什么 listView.getChildren() 返回的不是完整数据
             listView = getListView()
@@ -278,7 +281,7 @@ class LogWxHistoryStep : StepImpl() {
             listChildren = listView.getChildren()
         }
 
-        OverManager.log("运行异常，返回")
+        OverManager.log("运行异常，返回", isForceShow = true)
         Assists.back()
         return true
     }

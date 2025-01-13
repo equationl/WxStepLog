@@ -27,6 +27,7 @@ class FindUserNameStep : StepImpl() {
 
     override fun onImpl(collector: StepCollector) {
         collector.next(StepTag.STEP_1) { step ->
+            OverManager.log("开始运行", isForceShow = true)
             OverManager.log("启动微信")
             nameSet.clear()
             Intent().apply {
@@ -36,7 +37,7 @@ class FindUserNameStep : StepImpl() {
                 try {
                     Assists.service?.startActivity(this)
                 } catch (e: ActivityNotFoundException) {
-                    OverManager.log("无法启动【微信】，你安装微信了吗？")
+                    OverManager.log("无法启动【微信】，你安装微信了吗？", isForceShow = true)
                     return@next Step.none
                 }
             }
@@ -62,7 +63,7 @@ class FindUserNameStep : StepImpl() {
             }
 
             if (step.repeatCount == 5) {
-                OverManager.log("已重复 5 次依旧没有找到【通讯录】，结束运行")
+                OverManager.log("已重复 5 次依旧没有找到【通讯录】，结束运行", isForceShow = true)
                 return@next Step.get(StepTag.STEP_4)
             }
 
@@ -102,7 +103,7 @@ class FindUserNameStep : StepImpl() {
                 }
 
                 if (endFlag) {
-                    OverManager.log("已到达最后一页，总计好友 $num 个，结束查找")
+                    OverManager.log("已到达最后一页，总计好友 $num 个，结束查找", isForceShow = true)
                     return@next Step.get(StepTag.STEP_4, data = num)
                 }
 
@@ -119,23 +120,23 @@ class FindUserNameStep : StepImpl() {
                 listNodes = listView.getNodes()
             }
 
-            OverManager.log("运行异常，结束运行")
+            OverManager.log("运行异常，结束运行", isForceShow = true)
             return@next Step.get(StepTag.STEP_4)
         }.next(StepTag.STEP_4) { step ->
             // 仅保留 id 最多的数据
             val maxNameList = nameSet.maxByOrNull { it.value.size }
             val newList = maxNameList?.value
             if (newList != null) {
-                OverManager.log("实际找到 ${newList.size} 个好友")
+                OverManager.log("实际找到 ${newList.size} 个好友", isForceShow = true)
                 newList.addAll(Constants.allUserNameList)
                 Constants.allUserNameList.clear()
                 Constants.allUserNameList.addAll(newList)
             }
             else {
-                OverManager.log("没有找到合法数据！")
+                OverManager.log("没有找到合法数据！", isForceShow = true)
             }
 
-            OverManager.log("结束运行，返回 APP")
+            OverManager.log("结束运行，返回 APP", isForceShow = true)
             Assists.tasks()
             delay(50)
             Assists.tasks()

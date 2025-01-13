@@ -98,8 +98,6 @@ private fun ContinuousLogPage() {
             randomIntervalValue.value = DataStoreUtils.getSyncData(DataKey.LOG_INTERVAL_TIME_RANDOM_RANGE, "30000")
             showDaraFilterUserName.value = DataStoreUtils.getSyncData(DataKey.SHOW_DATA_FILTER_USER, "")
             logUserModel.value = DataStoreUtils.getSyncData(DataKey.LOG_USER_MODE, LogSettingMode.Multiple.name).toLogUserMode() ?: LogSettingMode.Multiple
-            Constants.wxPkgName.value = DataStoreUtils.getSyncData(DataKey.WX_PKG_NAME, Constants.wxPkgName.value)
-            Constants.wxLauncherPkg.value = DataStoreUtils.getSyncData(DataKey.WX_LAUNCHER_PKG_NAME, Constants.wxLauncherPkg.value)
         }
     }
 

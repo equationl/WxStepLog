@@ -10,4 +10,6 @@ object DataKey {
     const val SHOW_DATA_FILTER_USER = "SHOW_DATA_FILTER_USER"
     const val WX_PKG_NAME = "WX_PKG_NAME"
     const val WX_LAUNCHER_PKG_NAME = "WX_LAUNCHER_PKG_NAME"
+    const val RUN_STEP_INTERVAL_TIME = "RUN_STEP_INTERVAL_TIME"
+    const val SHOW_DETAIL_LOG = "SHOW_DETAIL_LOG"
 }

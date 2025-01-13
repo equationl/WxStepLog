@@ -1,6 +1,7 @@
 package com.equationl.wxsteplog.step
 
 import android.annotation.SuppressLint
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import androidx.core.view.isVisible
@@ -93,18 +94,18 @@ object OverManager : StepListener {
 //                    StepManager.execute(LogWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!)
 //                }
 //                else {
-                    StepManager.execute(LogMultipleWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!)
+                    StepManager.execute(LogMultipleWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!, delay = Constants.runStepIntervalTime.intValue.toLong())
 //                }
             }
 
             btnFindUserName.setOnClickListener {
                 beginStart(this)
-                StepManager.execute(FindUserNameStep::class.java, StepTag.STEP_1, begin = true)
+                StepManager.execute(FindUserNameStep::class.java, StepTag.STEP_1, begin = true, delay = Constants.runStepIntervalTime.intValue.toLong())
             }
 
             btnLogHistory.setOnClickListener {
                 beginStart(this)
-                StepManager.execute(LogWxHistoryStep::class.java, StepTag.STEP_1, begin = true)
+                StepManager.execute(LogWxHistoryStep::class.java, StepTag.STEP_1, begin = true, delay = Constants.runStepIntervalTime.intValue.toLong())
             }
 
             btnStop.setOnClickListener {
@@ -277,7 +278,12 @@ object OverManager : StepListener {
     }
 
     private val logStr: StringBuilder = StringBuilder()
-    fun log(value: Any) {
+    fun log(value: Any, isForceShow: Boolean = false) {
+        if (!isForceShow && !Constants.showDetailLog.value) {
+            Log.i(TAG, value.toString())
+            return
+        }
+
         LogUtil.i(TAG, value.toString())
 
         if (logStr.length > 1000) logStr.delete(0, 50)

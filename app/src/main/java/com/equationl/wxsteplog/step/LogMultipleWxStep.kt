@@ -34,6 +34,7 @@ class LogMultipleWxStep : StepImpl() {
     override fun onImpl(collector: StepCollector) {
         collector.next(StepTag.STEP_1) { step ->
             val setting = step.data as WxStepLogSetting
+            OverManager.log("开始运行", isForceShow = true)
             OverManager.log("当前参数：$setting")
             OverManager.log("启动微信")
             Intent().apply {
@@ -43,7 +44,7 @@ class LogMultipleWxStep : StepImpl() {
                 try {
                     Assists.service?.startActivity(this)
                 } catch (e: ActivityNotFoundException) {
-                    OverManager.log("无法启动【微信】，你安装微信了吗？")
+                    OverManager.log("无法启动【微信】，你安装微信了吗？", isForceShow = true)
                     return@next Step.none
                 }
             }
@@ -65,7 +66,7 @@ class LogMultipleWxStep : StepImpl() {
             }
 
             if (step.repeatCount == 5) {
-                OverManager.log("已重复 5 次依旧没有找到【微信】，返回第一步")
+                OverManager.log("已重复 5 次依旧没有找到【微信】，返回第一步", isForceShow = true)
                 return@next Step.get(StepTag.STEP_1, data = setting)
             }
 
@@ -89,7 +90,7 @@ class LogMultipleWxStep : StepImpl() {
             }
 
             if (step.repeatCount == 5) {
-                OverManager.log("已重复 5 次依旧没有找到【微信运动】，返回第一步")
+                OverManager.log("已重复 5 次依旧没有找到【微信运动】，返回第一步", isForceShow = true)
                 return@next Step.get(StepTag.STEP_1, data = setting)
             }
 
@@ -113,7 +114,7 @@ class LogMultipleWxStep : StepImpl() {
             }
 
             if (step.repeatCount == 5) {
-                OverManager.log("已重复 5 次依旧没有找到【步数排行榜】，返回第一步")
+                OverManager.log("已重复 5 次依旧没有找到【步数排行榜】，返回第一步", isForceShow = true)
                 return@next Step.get(StepTag.STEP_1, data = setting)
             }
 
@@ -126,7 +127,7 @@ class LogMultipleWxStep : StepImpl() {
             for (node in nodes) {
                 if (node?.text?.contains("正在加载") == true) {
                     OverManager.log("正在加载中，等待……")
-                    delay(1000)
+                    delay(Constants.runStepIntervalTime.intValue.toLong())
                     return@next Step.get(StepTag.STEP_5, data = setting)
                 }
             }
@@ -134,7 +135,7 @@ class LogMultipleWxStep : StepImpl() {
             var listView = getListView()
 
             if (listView == null) {
-                OverManager.log("没有找到列表，返回第一步")
+                OverManager.log("没有找到列表，返回第一步", isForceShow = true)
                 return@next Step.get(StepTag.STEP_1, data = setting)
             }
 
@@ -144,12 +145,12 @@ class LogMultipleWxStep : StepImpl() {
                 idModel = getBaseIds(listChildren)
                 OverManager.log("基准id数据为 $idModel")
                 if (idModel == null) {
-                    OverManager.log("没有找到可用基准数据，返回第一步")
+                    OverManager.log("没有找到可用基准数据，返回第一步", isForceShow = true)
                     return@next Step.get(StepTag.STEP_1, data = setting)
                 }
             }
             else {
-                OverManager.log("当前运动数据列表数量不符合需求，需要 2，当前为 ${listChildren.size}，返回第一步")
+                OverManager.log("当前运动数据列表数量不符合需求，需要 2，当前为 ${listChildren.size}，返回第一步", isForceShow = true)
                 return@next Step.get(StepTag.STEP_1, data = setting)
             }
 
@@ -163,7 +164,7 @@ class LogMultipleWxStep : StepImpl() {
 
             while (true) {
                 if (runningErrorCount > 5) {
-                    OverManager.log("累计错误达 $runningErrorCount 次，跳出循环读取")
+                    OverManager.log("累计错误达 $runningErrorCount 次，跳出循环读取", isForceShow = true)
                     break
                 }
 
@@ -179,12 +180,12 @@ class LogMultipleWxStep : StepImpl() {
 
                         if (!orderText.isNullOrBlank() && !nameText.isNullOrBlank() && !stepText.isNullOrBlank() && !likeText.isNullOrBlank()) {
                             if (!isNeedLogAllList && alreadyLogNameList.size == setting.userNameList.size) {
-                                OverManager.log("已记录所有需要用户，返回")
+                                OverManager.log("已记录所有需要用户，返回", isForceShow = true)
                                 Assists.back()
                                 val delay = Utils.getIntervalTime(setting)
-                                OverManager.log("间隔 $delay ms 后继续")
+                                OverManager.log("间隔 $delay ms 后继续", isForceShow = true)
                                 delay(delay)
-                                OverManager.log("间隔时间到，继续记录")
+                                OverManager.log("间隔时间到，继续记录", isForceShow = true)
                                 return@next Step.get(StepTag.STEP_4, data = setting)
                             }
 
@@ -206,7 +207,7 @@ class LogMultipleWxStep : StepImpl() {
                                     alreadyLogNameList.add(nameText.toString())
                                     OverManager.log("已记录 $nameText 的详情数据，返回列表")
                                     Assists.back()
-                                    delay(1000)
+                                    delay(Constants.runStepIntervalTime.intValue.toLong())
                                 }
                             }
                             else {
@@ -233,18 +234,18 @@ class LogMultipleWxStep : StepImpl() {
 
                 val endFlag = listView.findByText("邀请朋友").isNotEmpty()
                 if (endFlag) {
-                    OverManager.log("已到达最后一页，返回")
+                    OverManager.log("已到达最后一页，返回", isForceShow = true)
                     Assists.back()
                     val delay = Utils.getIntervalTime(setting)
-                    OverManager.log("间隔 $delay ms 后继续")
+                    OverManager.log("间隔 $delay ms 后继续", isForceShow = true)
                     delay(delay)
-                    OverManager.log("间隔时间到，继续记录")
+                    OverManager.log("间隔时间到，继续记录", isForceShow = true)
                     return@next Step.get(StepTag.STEP_4, data = setting)
                 }
 
                 OverManager.log("本页已记录完成，滚动到下一页")
                 listView?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
-                delay(1000)
+                delay(Constants.runStepIntervalTime.intValue.toLong())
 
                 // 这里需要重新拿一下 listview 对象，不然不知道为什么 listView.getChildren() 返回的不是完整数据
                 listView = getListView()
@@ -256,7 +257,7 @@ class LogMultipleWxStep : StepImpl() {
                 listChildren = listView.getChildren()
             }
 
-            OverManager.log("运行异常，返回上一步")
+            OverManager.log("运行异常，返回上一步", isForceShow = true)
             return@next Step.get(StepTag.STEP_4, data = setting)
         }
     }
@@ -291,7 +292,7 @@ class LogMultipleWxStep : StepImpl() {
             )
         }
 
-        OverManager.log("遍历完毕当前数据后依旧没有找到基准数据")
+        OverManager.log("遍历完毕当前数据后依旧没有找到基准数据", isForceShow = true)
         return null
     }
 
@@ -307,7 +308,7 @@ class LogMultipleWxStep : StepImpl() {
             nameNode.findFirstParentClickable()?.click()
         }
 
-        delay(1000)
+        delay(Constants.runStepIntervalTime.intValue.toLong())
         val nodes = Assists.getAllNodes()
 
         if (nodes.find { it.text == "正在加载"} != null) {

@@ -3,6 +3,7 @@ package com.equationl.wxsteplog.ui.view.setting.screen
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -13,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.core.text.isDigitsOnly
 import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.ui.LocalNavController
 import com.equationl.wxsteplog.util.datastore.DataKey
@@ -72,7 +75,37 @@ private fun SettingContent() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = Constants.showDetailLog.value,
+                onCheckedChange = {
+                    Constants.showDetailLog.value = it
+                }
+            )
+            Text("显示详细日志（勾选后会严重影响读取速度）")
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         Text("如果不知道以下选项是什么意思请勿修改", style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.error))
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = Constants.runStepIntervalTime.intValue.toString(),
+            onValueChange = {
+                if (it.isDigitsOnly() || it.isEmpty()) {
+                    Constants.runStepIntervalTime.intValue = it.toIntOrNull() ?: Constants.runStepIntervalTime.intValue
+                }
+            },
+            singleLine = true,
+            label = {
+                Text(text = "运行步骤间隔时间(ms)")
+            },
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+        )
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -124,6 +157,8 @@ private fun TopBar() {
             IconButton(onClick = {
                 DataStoreUtils.putSyncData(DataKey.WX_PKG_NAME, Constants.wxPkgName.value)
                 DataStoreUtils.putSyncData(DataKey.WX_LAUNCHER_PKG_NAME, Constants.wxLauncherPkg.value)
+                DataStoreUtils.putSyncData(DataKey.RUN_STEP_INTERVAL_TIME, Constants.runStepIntervalTime.intValue)
+                DataStoreUtils.putSyncData(DataKey.SHOW_DETAIL_LOG, Constants.showDetailLog.value)
                 Toast.makeText(context, "已保存！", Toast.LENGTH_SHORT).show()
                 navController.popBackStack()
             }) {
