@@ -570,6 +570,7 @@ private fun UserDropMenu(
                     Text(text = item, color = if (index == 0) MaterialTheme.colorScheme.error else Color.Unspecified)
                 },
                 onClick = {
+                    changeShowState(false)
                     onChangeFilter(
                         state.filter.copy(user = if (index == 0) null else item, isFilterUser = index != 0)
                     )

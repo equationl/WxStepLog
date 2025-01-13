@@ -583,7 +583,6 @@ private fun HeaderFilter(
 
 @Composable
 private fun FilterUser(state: HistoryStatisticsState, onChangeFilter: (newFilter: HistoryStatisticsFilter) -> Unit) {
-    // TODO 点击筛选用户后没有隐藏弹出框
     var isShowUserDropMenu by remember { mutableStateOf(false) }
 
     Row(
@@ -639,6 +638,7 @@ private fun UserDropMenu(
                     Text(text = item, color = if (index == 0) MaterialTheme.colorScheme.error else Color.Unspecified)
                 },
                 onClick = {
+                    changeShowState(false)
                     onChangeFilter(
                         state.filter.copy(user = if (index == 0) null else item, isFilterUser = index != 0)
                     )
