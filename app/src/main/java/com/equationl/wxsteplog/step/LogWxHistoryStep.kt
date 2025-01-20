@@ -111,7 +111,10 @@ class LogWxHistoryStep : StepImpl() {
                 }
 
                 val listViewChildren = listView?.getChildren()
-                listViewChildren?.forEach { cardParent ->
+
+                var isMsgExpired = false
+
+                for (cardParent in listViewChildren ?: listOf()) {
                     val cardSubItemList = cardParent?.getChildren()
                     // 这种判断方式不对，如果有点赞消息的话也会判断成卡片（不过其实从点赞消息点进去也没有问题）
                     Log.i("el", "onImpl: className = ${cardSubItemList?.firstOrNull()?.className }, size = ${cardSubItemList?.size}")
@@ -121,7 +124,7 @@ class LogWxHistoryStep : StepImpl() {
                             DateTimeUtil.getTimeFromMsgListHeader(dateTimeText)
                         } catch (tr: Throwable) {
                             OverManager.log("$dateTimeText 无法解析，跳过本次循环")
-                            return@forEach
+                            continue
                         }
                         if (alreadyLogDate.contains(dateTime)) {
                             OverManager.log("$dateTimeText 已记录，跳过")
@@ -133,7 +136,7 @@ class LogWxHistoryStep : StepImpl() {
                             OverManager.log("开始记录 $dateTimeText 的数据")
                             val result = getDetailData(dateTime)
                             if (!result) {
-                                return@next Step.none
+                                isMsgExpired = true
                             }
                             delay(Constants.runStepIntervalTime.intValue.toLong())
                         }
@@ -142,6 +145,11 @@ class LogWxHistoryStep : StepImpl() {
                         OverManager.log("当前卡片内容不符合，跳过")
                     }
                 }
+
+                if (isMsgExpired) {
+                    return@next Step.none
+                }
+
                 OverManager.log("本页已记录完成，滚动到上一页")
                 val endFlag = !(listView?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD) ?: false)
 
@@ -213,8 +221,6 @@ class LogWxHistoryStep : StepImpl() {
         var runningErrorCount = 0
 
         while (true) {
-            // TODO 这里是按照顺序读取的数据，可能会出现列表前几项已经消息过期，但是实际上本页的剩下消息并未过期，导致漏掉数据
-
             if (runningErrorCount > 5) {
                 OverManager.log("累计错误达 $runningErrorCount 次，跳出循环读取", isForceShow = true)
                 break
