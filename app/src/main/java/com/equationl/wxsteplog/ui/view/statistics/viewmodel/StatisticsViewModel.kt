@@ -148,15 +148,27 @@ class StatisticsViewModel @Inject constructor(
             val dataList = if (filter == null) {
                 db.wxStepDB().queryAllData()
             } else {
-                // val offset = TimeZone.getDefault().rawOffset
+                val offset = TimeZone.getDefault().rawOffset
                 if (filter.isFilterUser && filter.user != null)
-                    db.wxStepDB().queryRangeDataListByUserName(_uiState.value.filter.showRange.start, _uiState.value.filter.showRange.end, filter.user, 1, Int.MAX_VALUE)
+                    db.wxStepDB().queryRangeDataListByUserName(_uiState.value.filter.showRange.start - offset, _uiState.value.filter.showRange.end - offset, filter.user, 1, Int.MAX_VALUE)
                 else
-                    db.wxStepDB().queryRangeDataList(_uiState.value.filter.showRange.start, _uiState.value.filter.showRange.end, 1, Int.MAX_VALUE)
+                    db.wxStepDB().queryRangeDataList(_uiState.value.filter.showRange.start - offset, _uiState.value.filter.showRange.end - offset, 1, Int.MAX_VALUE)
             }
 
-            dataList.forEachIndexed { index, row ->
+            val lastDataMap = mutableMapOf<String, Pair<Int?, Int?>>()
+
+            for ((index, row) in dataList.withIndex()) {
+                if (filter != null && filter.isFoldData) {
+                    val lastData = lastDataMap[row.userName]
+                    if (lastData != null && lastData.first == row.stepNum && lastData.second == row.likeNum) {
+                        onProgress((index + 1).toFloat() / dataList.size)
+                        continue
+                    }
+                }
+
+                // TODO CSV 间隔符应该支持自定义
                 outputStream.write("${row.id},${row.userName},${row.stepNum},${row.likeNum},${row.logTimeString},${row.logTime},${row.userOrder},${row.logModel}\n".toByteArray())
+                lastDataMap[row.userName] = Pair(row.stepNum, row.likeNum)
                 onProgress((index + 1).toFloat() / dataList.size)
             }
             outputStream.flush()
