@@ -141,6 +141,7 @@ object ResolveDataUtil {
     ): Boolean {
         var hasConflict = false
         var index = 0
+        val delimiter = Constants.csvDelimiter.value.first()
 
         for (line in csvLines) {
             index++
@@ -152,7 +153,14 @@ object ResolveDataUtil {
                 continue
             }
 
-            val itemList = line.split(",")
+            // 使用自定义 CSV 解析
+            val itemList = try {
+                CsvUtil.decodeCsvLine(line, delimiter)
+            } catch (e: Exception) {
+                Log.w(TAG, "importDataFromCsv: CSV parse error", e)
+                hasConflict = true
+                continue
+            }
 
             // 版本 1 导出数据只有 6 列
             // 版本 2 导出数据增加了两列可空数据：当前排名、记录模式
@@ -196,6 +204,7 @@ object ResolveDataUtil {
     ): Result<Boolean> {
         var hasConflict = false
         var index = 0
+        val delimiter = Constants.csvDelimiter.value.first()
 
         for (line in csvLines) {
             if (index == 0) {
@@ -214,7 +223,14 @@ object ResolveDataUtil {
                 continue
             }
 
-            val itemList = line.split(",")
+            // 使用自定义 CSV 解析
+            val itemList = try {
+                CsvUtil.decodeCsvLine(line, delimiter)
+            } catch (e: Exception) {
+                Log.w(TAG, "importDataFromCsv: CSV parse error", e)
+                hasConflict = true
+                continue
+            }
 
             // 导出数据为 10 列
             if (itemList.size !=  10) {

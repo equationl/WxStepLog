@@ -18,6 +18,7 @@ import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsFilter
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowRange
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowType
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsState
+import com.equationl.wxsteplog.util.CsvUtil
 import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
 import com.equationl.wxsteplog.util.ResolveDataUtil
 import com.equationl.wxsteplog.util.Utils
@@ -166,8 +167,7 @@ class StatisticsViewModel @Inject constructor(
                     }
                 }
 
-                // TODO CSV 间隔符应该支持自定义
-                outputStream.write("${row.id},${row.userName},${row.stepNum},${row.likeNum},${row.logTimeString},${row.logTime},${row.userOrder},${row.logModel}\n".toByteArray())
+                outputStream.write(CsvUtil.encodeCsvLineByte(row.id, row.userName, row.stepNum, row.likeNum, row.logTimeString, row.logTime, row.userOrder, row.logModel))
                 lastDataMap[row.userName] = Pair(row.stepNum, row.likeNum)
                 onProgress((index + 1).toFloat() / dataList.size)
             }

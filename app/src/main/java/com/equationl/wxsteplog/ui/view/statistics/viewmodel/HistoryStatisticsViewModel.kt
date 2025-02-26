@@ -20,6 +20,7 @@ import com.equationl.wxsteplog.ui.view.statistics.state.HistoryStatisticsState
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsHistoryChartData
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowRange
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowType
+import com.equationl.wxsteplog.util.CsvUtil
 import com.equationl.wxsteplog.util.DateTimeUtil
 import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
 import com.equationl.wxsteplog.util.ResolveDataUtil
@@ -170,7 +171,7 @@ class HistoryStatisticsViewModel @Inject constructor(
             outputStream.write(Constants.WX_HISTORY_LOG_DATA_CSV_HEADER.toByteArray())
 
             dataList.forEachIndexed { index, row ->
-                outputStream.write("${row.id},${row.userName},${row.stepNum},${row.likeNum},${row.userOrder},${row.logStartTime},${row.logEndTime},${row.dataTime},${row.dataTimeString},${row.logModel}\n".toByteArray())
+                outputStream.write(CsvUtil.encodeCsvLineByte(row.id,row.userName,row.stepNum,row.likeNum,row.userOrder,row.logStartTime,row.logEndTime,row.dataTime,row.dataTimeString,row.logModel))
                 onProgress((index + 1).toFloat() / dataList.size)
             }
             outputStream.flush()

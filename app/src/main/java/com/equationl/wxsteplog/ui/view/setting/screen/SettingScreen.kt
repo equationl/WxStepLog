@@ -53,6 +53,7 @@ fun SettingScreen() {
             scope.launch {
                 Constants.wxPkgName.value = DataStoreUtils.getSyncData(DataKey.WX_PKG_NAME, Constants.wxPkgName.value)
                 Constants.wxLauncherPkg.value = DataStoreUtils.getSyncData(DataKey.WX_LAUNCHER_PKG_NAME, Constants.wxLauncherPkg.value)
+                Constants.csvDelimiter.value = DataStoreUtils.getSyncData(DataKey.CSV_DELIMITER, Constants.csvDelimiter.value)
             }
         }
 
@@ -134,6 +135,23 @@ private fun SettingContent() {
             },
             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text),
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = Constants.csvDelimiter.value,
+            onValueChange = {
+                if (it.length > 1) {
+                    return@OutlinedTextField
+                }
+                Constants.csvDelimiter.value = it
+            },
+            singleLine = true,
+            label = {
+                Text(text = "CSV 分隔符号")
+            },
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text),
+        )
     }
 }
 
@@ -159,6 +177,7 @@ private fun TopBar() {
                 DataStoreUtils.putSyncData(DataKey.WX_LAUNCHER_PKG_NAME, Constants.wxLauncherPkg.value)
                 DataStoreUtils.putSyncData(DataKey.RUN_STEP_INTERVAL_TIME, Constants.runStepIntervalTime.intValue)
                 DataStoreUtils.putSyncData(DataKey.SHOW_DETAIL_LOG, Constants.showDetailLog.value)
+                DataStoreUtils.putSyncData(DataKey.CSV_DELIMITER, Constants.csvDelimiter.value)
                 Toast.makeText(context, "已保存！", Toast.LENGTH_SHORT).show()
                 navController.popBackStack()
             }) {

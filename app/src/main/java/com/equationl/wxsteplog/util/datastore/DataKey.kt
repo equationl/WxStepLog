@@ -12,4 +12,5 @@ object DataKey {
     const val WX_LAUNCHER_PKG_NAME = "WX_LAUNCHER_PKG_NAME"
     const val RUN_STEP_INTERVAL_TIME = "RUN_STEP_INTERVAL_TIME"
     const val SHOW_DETAIL_LOG = "SHOW_DETAIL_LOG"
+    const val CSV_DELIMITER = "CSV_DELIMITER"
 }

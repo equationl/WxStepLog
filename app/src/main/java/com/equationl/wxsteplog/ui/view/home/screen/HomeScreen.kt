@@ -2,6 +2,7 @@ package com.equationl.wxsteplog.ui.view.home.screen
 
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +16,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -61,6 +63,7 @@ fun HomeScreen() {
         Constants.wxLauncherPkg.value = DataStoreUtils.getSyncData(DataKey.WX_LAUNCHER_PKG_NAME, Constants.wxLauncherPkg.value)
         Constants.runStepIntervalTime.intValue = DataStoreUtils.getSyncData(DataKey.RUN_STEP_INTERVAL_TIME, Constants.runStepIntervalTime.intValue)
         Constants.showDetailLog.value = DataStoreUtils.getSyncData(DataKey.SHOW_DETAIL_LOG, Constants.showDetailLog.value)
+        Constants.csvDelimiter.value = DataStoreUtils.getSyncData(DataKey.CSV_DELIMITER, Constants.csvDelimiter.value)
     }
 
     Scaffold(
@@ -101,12 +104,21 @@ private fun HomePage(isAccessibilityServiceEnabled: MutableState<Boolean>) {
 @Composable
 private fun TopBar() {
     val navController = LocalNavController.current
+    val context = LocalContext.current
 
     TopAppBar(
         title = {
             Text(text = stringResource(R.string.app_name))
         },
         actions = {
+            IconButton(
+                onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(Constants.GITHUB_HOME_PAGE))
+                    context.startActivity(intent)
+                }
+            ) {
+                Icon(Icons.AutoMirrored.Outlined.HelpOutline, contentDescription = "help")
+            }
             IconButton(
                 onClick = {
                     navController.navigate(Route.GLOBAL_SETTING)
