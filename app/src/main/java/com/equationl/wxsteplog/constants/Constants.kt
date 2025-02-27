@@ -18,7 +18,7 @@ object Constants {
     val showDetailLog = mutableStateOf(true)
     val csvDelimiter = mutableStateOf(",")
 
-    val functionList = listOf("读取历史记录（单次读取）", "记录实时数据（连续运行）")
+    val functionList = listOf("读取历史记录（单次读取）", "记录实时数据（连续运行）", "AI分析历史数据")
 
     var logWxHistoryStepStartTime: Long = 0
 }

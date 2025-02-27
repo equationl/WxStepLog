@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.equationl.wxsteplog.constants.Route
+import com.equationl.wxsteplog.ui.view.aianalysis.screen.AiAnalysisScreen
 import com.equationl.wxsteplog.ui.view.continuousLog.screen.ContinuousLogScreen
 import com.equationl.wxsteplog.ui.view.home.screen.HomeScreen
 import com.equationl.wxsteplog.ui.view.setting.screen.SettingScreen
@@ -47,6 +48,10 @@ fun HomeNavHost(
 
             composable(Route.HISTORY_STATISTIC) {
                 HistoryStatisticsScreen()
+            }
+            
+            composable(Route.AI_ANALYSIS) {
+                AiAnalysisScreen()
             }
         }
     }

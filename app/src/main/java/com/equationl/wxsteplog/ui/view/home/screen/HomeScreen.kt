@@ -212,6 +212,9 @@ private fun HomeContent() {
                     1 -> {
                         Route.CONTINUOUS_LOG
                     }
+                    2 -> {
+                        Route.AI_ANALYSIS
+                    }
                     else -> {
                         Route.SINGLE_LOG
                     }
@@ -234,8 +237,11 @@ private fun getHelpText(index: Int): String {
         1 -> {
             "后台连续记录当前运动排行中的实时数据，开启后会一直运行，直至手动停止。"
         }
+        2 -> {
+            "将收集的步数数据提交给AI大模型进行分析（该功能由 AI 生成，且仅为本地功能简单演示，未真实接入大模型）"
+        }
         else -> {
-            ""
+            "未知功能，请联系开发者解决"
         }
     }
 }
