@@ -11,6 +11,7 @@ import com.equationl.wxsteplog.constants.Route
 import com.equationl.wxsteplog.ui.view.aianalysis.screen.AiAnalysisScreen
 import com.equationl.wxsteplog.ui.view.continuousLog.screen.ContinuousLogScreen
 import com.equationl.wxsteplog.ui.view.home.screen.HomeScreen
+import com.equationl.wxsteplog.ui.view.setting.screen.AiSettingsScreen
 import com.equationl.wxsteplog.ui.view.setting.screen.SettingScreen
 import com.equationl.wxsteplog.ui.view.singleLog.screen.SingleLogScreen
 import com.equationl.wxsteplog.ui.view.statistics.screen.HistoryStatisticsScreen
@@ -52,6 +53,10 @@ fun HomeNavHost(
             
             composable(Route.AI_ANALYSIS) {
                 AiAnalysisScreen()
+            }
+            
+            composable(Route.AI_SETTINGS) {
+                AiSettingsScreen()
             }
         }
     }

@@ -8,4 +8,5 @@ object Route {
     const val HISTORY_STATISTIC = "historyStatistic"
     const val GLOBAL_SETTING = "globalSetting"
     const val AI_ANALYSIS = "aiAnalysis"
+    const val AI_SETTINGS = "aiSettings"
 }

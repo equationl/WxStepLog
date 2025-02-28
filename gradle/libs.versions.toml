@@ -21,6 +21,8 @@ dagger = "2.51.1"
 vico = "2.0.0-beta.1"
 datastore = "1.1.1"
 dialog-core = "0.9.0"
+appcompat = "1.7.0"
+material = "1.12.0"
 
 [libraries]
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout" }
@@ -57,6 +59,8 @@ vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", ve
 androidx-datastore-core = { module = "androidx.datastore:datastore-core", version.ref = "datastore" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 dialog-core = { module = "io.github.vanpra.compose-material-dialogs:core", version.ref = "dialog-core" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
 
 [plugins]
@@ -65,4 +69,5 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 google-devtools-ksp = {id = "com.google.devtools.ksp", version.ref = "ksp"}
 google-dagger-hilt-android = {id = "com.google.dagger.hilt.android", version.ref = "hiltPlugin" }
+android-library = { id = "com.android.library", version.ref = "agp" }
 

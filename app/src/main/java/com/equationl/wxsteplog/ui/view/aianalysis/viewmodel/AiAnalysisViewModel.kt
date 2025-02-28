@@ -7,14 +7,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.equationl.wxsteplog.ai.AiAnalysisInterface
-import com.equationl.wxsteplog.ai.AiAnalysisResult
-import com.equationl.wxsteplog.ai.AnalysisStatus
+import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.db.WxStepDB
 import com.equationl.wxsteplog.db.WxStepDao
 import com.equationl.wxsteplog.db.WxStepHistoryTable
 import com.equationl.wxsteplog.db.WxStepTable
 import com.equationl.wxsteplog.model.StepHistoryLogStartTimeDbModel
+import com.equationl.wxsteplog.util.CsvUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,7 +27,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AiAnalysisViewModel @Inject constructor(
     wxStepDB: WxStepDB,
-    private val aiAnalysisService: AiAnalysisInterface
+    private val aiAnalysisService: com.equationl.wxsteplog.aiapi.AiAnalysisInterface
 ) : ViewModel() {
     private val wxStepHistoryDao = wxStepDB.wxStepHistoryDB()
     private val wxStepDao: WxStepDao = wxStepDB.wxStepDB()
@@ -77,18 +76,14 @@ class AiAnalysisViewModel @Inject constructor(
     // 是否剔除重复数据（实时数据）
     var removeDuplicates by mutableStateOf(true)
         private set
-    
+
     // 是否在分析时自动滚动到底部
     var autoScrollToBottom by mutableStateOf(true)
         private set
     
-    // 自动滚动控制状态
-    var isAutoScrolling by mutableStateOf(false)
-        private set
-    
     // 分析状态
-    private val _analysisState = MutableStateFlow<AiAnalysisResult?>(null)
-    val analysisState: StateFlow<AiAnalysisResult?> = _analysisState
+    private val _analysisState = MutableStateFlow<com.equationl.wxsteplog.aiapi.AiAnalysisResult?>(null)
+    val analysisState: StateFlow<com.equationl.wxsteplog.aiapi.AiAnalysisResult?> = _analysisState
     
     // 选中的数据
     private var selectedHistoryData = listOf<WxStepHistoryTable>()
@@ -231,13 +226,6 @@ class AiAnalysisViewModel @Inject constructor(
     fun onAutoScrollToBottomChanged(value: Boolean) {
         Log.d("AiAnalysis", "自动滚动状态变更: $autoScrollToBottom -> $value")
         autoScrollToBottom = value
-        
-        // 如果启用了自动滚动，立即触发滚动状态
-        if (value && analysisState.value?.status == AnalysisStatus.PROCESSING) {
-            startAutoScroll()
-        } else if (!value) {
-            stopAutoScroll()
-        }
     }
     
     /**
@@ -288,32 +276,86 @@ class AiAnalysisViewModel @Inject constructor(
             userName = userName
         )
         
-        // 剔除重复数据（根据用户名、步数、时间去重）
+        // 剔除重复数据
         return if (removeDuplicates) {
-            data.distinctBy { "${it.userName}_${it.stepNum}_${it.logTime}" }
+            val result = mutableListOf<WxStepTable>()
+            /** {"user", Pair(stepNum, likeNum)} */
+            val lastDataMap = mutableMapOf<String, Pair<Int?, Int?>>()
+            
+            for (item in data) {
+                val lastData = lastDataMap[item.userName]
+                if (lastData != null && lastData.first == item.stepNum && lastData.second == item.likeNum) {
+                    continue
+                }
+                
+                result.add(item)
+                lastDataMap[item.userName] = Pair(item.stepNum, item.likeNum)
+            }
+            
+            result
         } else {
             data
         }
     }
     
     /**
-     * 将实时数据转换为历史数据格式
-     * 这是为了兼容AI分析接口所需的数据格式
+     * 将历史数据转换为CSV格式
+     * 使用项目中已有的CSV转换逻辑
      */
-    private fun convertRealtimeToHistoryFormat(realtimeData: List<WxStepTable>): List<WxStepHistoryTable> {
-        return realtimeData.map { rtData ->
-            WxStepHistoryTable(
-                userName = rtData.userName,
-                stepNum = rtData.stepNum,
-                likeNum = rtData.likeNum,
-                userOrder = rtData.userOrder,
-                logStartTime = rtData.logTime,
-                logEndTime = rtData.logTime,
-                dataTime = rtData.logTime,
-                dataTimeString = rtData.logTimeString,
-                logModel = rtData.logModel
+    private fun convertHistoryDataToCsv(dataList: List<WxStepHistoryTable>): String {
+        val stringBuilder = StringBuilder()
+        
+        // 添加CSV表头
+        stringBuilder.append(Constants.WX_HISTORY_LOG_DATA_CSV_HEADER)
+        
+        // 添加数据行
+        dataList.forEach { data ->
+            stringBuilder.append(
+                CsvUtil.encodeCsvLineString(
+                    data.id,
+                    data.userName,
+                    data.stepNum,
+                    data.likeNum,
+                    data.userOrder,
+                    data.logStartTime,
+                    data.logEndTime,
+                    data.dataTime,
+                    data.dataTimeString,
+                    data.logModel
+                )
             )
         }
+        
+        return stringBuilder.toString()
+    }
+    
+    /**
+     * 将实时数据直接转换为CSV格式
+     * 使用项目中已有的CSV转换逻辑
+     */
+    private fun convertRealtimeDataToCsv(dataList: List<WxStepTable>): String {
+        val stringBuilder = StringBuilder()
+        
+        // 添加CSV表头
+        stringBuilder.append(Constants.WX_LOG_DATA_CSV_HEADER)
+        
+        // 添加数据行 - 将实时数据映射到CSV格式
+        dataList.forEach { row ->
+            stringBuilder.append(
+                CsvUtil.encodeCsvLineString(
+                    row.id,
+                    row.userName,
+                    row.stepNum,
+                    row.likeNum,
+                    row.logTimeString,
+                    row.logTime,
+                    row.userOrder,
+                    row.logModel
+                )
+            )
+        }
+        
+        return stringBuilder.toString()
     }
     
     /**
@@ -323,57 +365,66 @@ class AiAnalysisViewModel @Inject constructor(
         if (isAnalyzing) return
         
         isAnalyzing = true
-        _analysisState.value = AiAnalysisResult(
-            status = AnalysisStatus.PROCESSING,
+        _analysisState.value = com.equationl.wxsteplog.aiapi.AiAnalysisResult(
+            status = com.equationl.wxsteplog.aiapi.AnalysisStatus.PROCESSING,
             content = "",
             modelName = selectedModel
         )
         
-        // 启动自动滚动
-        startAutoScroll()
-        
         viewModelScope.launch {
             try {
-                // 根据数据源类型加载不同的数据
-                val dataForAnalysis = if (dataSourceType == DataSourceType.HISTORY) {
-                    // 加载历史数据
-                    loadSelectedHistoryData()
+                // 转换为CSV格式的数据
+                val csvData = if (dataSourceType == DataSourceType.HISTORY) {
+                    // 加载并转换历史数据
+                    val historyData = loadSelectedHistoryData()
+                    if (historyData.isEmpty()) {
+                        _analysisState.value = com.equationl.wxsteplog.aiapi.AiAnalysisResult(
+                            status = com.equationl.wxsteplog.aiapi.AnalysisStatus.ERROR,
+                            content = "",
+                            modelName = selectedModel,
+                            errorMessage = "没有找到符合条件的历史数据"
+                        )
+                        isAnalyzing = false
+                        return@launch
+                    }
+                    convertHistoryDataToCsv(historyData)
                 } else {
-                    // 加载实时数据并转换为历史数据格式
+                    // 加载并直接转换实时数据
                     val realtimeData = loadSelectedRealtimeData()
-                    convertRealtimeToHistoryFormat(realtimeData)
+                    if (realtimeData.isEmpty()) {
+                        _analysisState.value = com.equationl.wxsteplog.aiapi.AiAnalysisResult(
+                            status = com.equationl.wxsteplog.aiapi.AnalysisStatus.ERROR,
+                            content = "",
+                            modelName = selectedModel,
+                            errorMessage = "没有找到符合条件的实时数据"
+                        )
+                        isAnalyzing = false
+                        return@launch
+                    }
+                    convertRealtimeDataToCsv(realtimeData)
                 }
+
                 
-                if (dataForAnalysis.isEmpty()) {
-                    _analysisState.value = AiAnalysisResult(
-                        status = AnalysisStatus.ERROR,
-                        content = "",
-                        modelName = selectedModel,
-                        errorMessage = "没有找到符合条件的数据"
-                    )
-                    isAnalyzing = false
-                    return@launch
-                }
-                
-                // 调用AI分析服务
-                aiAnalysisService.analyzeStepData(
-                    data = dataForAnalysis,
+                // 调用AI分析服务（使用CSV格式数据）
+                aiAnalysisService.analyzeStepDataWithCsv(
+                    csvData = csvData,
                     prompt = userPrompt.takeIf { it.isNotBlank() },
                     modelName = selectedModel
                 ).collectLatest { result ->
                     _analysisState.value = result
                     
-                    // 分析完成或出错时结束分析状态
-                    if (result.status == AnalysisStatus.COMPLETED || result.status == AnalysisStatus.ERROR) {
+                    // 分析完成或出错时，停止自动滚动
+                    if (result.status != com.equationl.wxsteplog.aiapi.AnalysisStatus.PROCESSING) {
                         isAnalyzing = false
                     }
                 }
             } catch (e: Exception) {
-                _analysisState.value = AiAnalysisResult(
-                    status = AnalysisStatus.ERROR,
+                Log.e("AiAnalysis", "Analysis error", e)
+                _analysisState.value = com.equationl.wxsteplog.aiapi.AiAnalysisResult(
+                    status = com.equationl.wxsteplog.aiapi.AnalysisStatus.ERROR,
                     content = "",
                     modelName = selectedModel,
-                    errorMessage = "分析过程中出错: ${e.message ?: "未知错误"}"
+                    errorMessage = "分析时发生错误: ${e.message}"
                 )
                 isAnalyzing = false
             }
@@ -409,19 +460,5 @@ class AiAnalysisViewModel @Inject constructor(
         viewModelScope.launch {
             aiAnalysisService.saveModelConfig(modelName, mapOf("apiKey" to apiKey))
         }
-    }
-    
-    /**
-     * 开始自动滚动
-     */
-    fun startAutoScroll() {
-        isAutoScrolling = true
-    }
-    
-    /**
-     * 停止自动滚动
-     */
-    fun stopAutoScroll() {
-        isAutoScrolling = false
     }
 }

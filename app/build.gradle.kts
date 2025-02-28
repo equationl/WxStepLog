@@ -52,6 +52,12 @@ android {
 
 dependencies {
     implementation(project(":assists"))
+    implementation(project(":aiapi"))
+
+    val includePaidModule = rootProject.providers.gradleProperty("include.paid.module").orNull?.toBoolean() ?: false
+    if (includePaidModule) {
+        implementation(project(":aipro"))
+    }
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

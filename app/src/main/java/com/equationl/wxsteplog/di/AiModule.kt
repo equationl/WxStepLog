@@ -1,7 +1,6 @@
 package com.equationl.wxsteplog.di
 
-import com.equationl.wxsteplog.ai.AiAnalysisInterface
-import com.equationl.wxsteplog.ai.DefaultAiAnalysisService
+import com.equationl.wxsteplog.ai.AiAnalysisServiceFactory
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -15,6 +14,6 @@ abstract class AiModule {
     @Binds
     @Singleton
     abstract fun bindAiAnalysisService(
-        defaultAiAnalysisService: DefaultAiAnalysisService
-    ): AiAnalysisInterface
+        aiAnalysisServiceFactory: AiAnalysisServiceFactory
+    ): com.equationl.wxsteplog.aiapi.AiAnalysisInterface
 }

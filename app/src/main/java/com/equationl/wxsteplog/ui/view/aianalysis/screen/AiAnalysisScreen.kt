@@ -14,10 +14,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -42,6 +43,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -55,7 +57,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,11 +64,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.equationl.wxsteplog.ai.AnalysisStatus
+import com.equationl.wxsteplog.constants.Route
 import com.equationl.wxsteplog.ui.LocalNavController
 import com.equationl.wxsteplog.ui.view.aianalysis.viewmodel.AiAnalysisViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -99,7 +99,6 @@ private fun AiAnalysisContent(
     val analysisState by viewModel.analysisState.collectAsState()
     val scrollState = rememberScrollState()
     val resultScrollState = rememberScrollState()
-    val scope = rememberCoroutineScope()
     
     Column(
         modifier = Modifier
@@ -121,41 +120,47 @@ private fun AiAnalysisContent(
                 Text("1. 选择数据来源", style = MaterialTheme.typography.titleMedium)
                 
                 // 数据源类型选择
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("数据类型:", Modifier.padding(end = 16.dp))
+                    Text("数据类型:", Modifier.padding(bottom = 4.dp))
                     Row(
-                        modifier = Modifier.selectableGroup(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectableGroup(),
+                        horizontalArrangement = Arrangement.Start
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.selectable(
-                                selected = viewModel.dataSourceType == AiAnalysisViewModel.DataSourceType.HISTORY,
-                                onClick = { viewModel.switchDataSourceType(AiAnalysisViewModel.DataSourceType.HISTORY) },
-                                role = Role.RadioButton
-                            )
+                            modifier = Modifier
+                                .wrapContentWidth()
+                                .selectable(
+                                    selected = viewModel.dataSourceType == AiAnalysisViewModel.DataSourceType.HISTORY,
+                                    onClick = { viewModel.switchDataSourceType(AiAnalysisViewModel.DataSourceType.HISTORY) },
+                                    role = Role.RadioButton
+                                )
                         ) {
                             RadioButton(
                                 selected = viewModel.dataSourceType == AiAnalysisViewModel.DataSourceType.HISTORY,
-                                onClick = null // null recommended for accessibility
+                                onClick = null
                             )
-                            Text("历史数据", Modifier.padding(start = 8.dp))
+                            Text("历史数据", Modifier.padding(start = 8.dp, end = 16.dp))
                         }
                         
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.selectable(
-                                selected = viewModel.dataSourceType == AiAnalysisViewModel.DataSourceType.REALTIME,
-                                onClick = { viewModel.switchDataSourceType(AiAnalysisViewModel.DataSourceType.REALTIME) },
-                                role = Role.RadioButton
-                            )
+                            modifier = Modifier
+                                .wrapContentWidth()
+                                .selectable(
+                                    selected = viewModel.dataSourceType == AiAnalysisViewModel.DataSourceType.REALTIME,
+                                    onClick = { viewModel.switchDataSourceType(AiAnalysisViewModel.DataSourceType.REALTIME) },
+                                    role = Role.RadioButton
+                                )
                         ) {
                             RadioButton(
                                 selected = viewModel.dataSourceType == AiAnalysisViewModel.DataSourceType.REALTIME,
-                                onClick = null // null recommended for accessibility
+                                onClick = null
                             )
                             Text("实时数据", Modifier.padding(start = 8.dp))
                         }
@@ -218,32 +223,19 @@ private fun AiAnalysisContent(
         
         // 分析结果展示
         analysisState?.let { result ->
-            // Debug: 打印当前滚动状态
-            val isAtBottom = resultScrollState.value >= (resultScrollState.maxValue - 10)
-            android.util.Log.d("AiAnalysis", "滚动状态: current=${resultScrollState.value}, max=${resultScrollState.maxValue}, atBottom=$isAtBottom")
-            
-            // 用已定义的 resultScrollState 替代局部的 scrollState
-            LaunchedEffect(result.content) {
-                // 当开启自动滚动且内容更新时，自动滚动到底部
-                if (viewModel.autoScrollToBottom && result.status == AnalysisStatus.PROCESSING) {
+            LaunchedEffect(result.content, result.status) {
+                if (viewModel.autoScrollToBottom) {
                     // 延迟一小段时间，确保布局已经更新
                     delay(100)
-                    // 确保滚动到最大值
-                    val scrollMax = resultScrollState.maxValue
-                    android.util.Log.d("AiAnalysis", "尝试滚动到底部: max=$scrollMax")
-                    resultScrollState.animateScrollTo(scrollMax)
+
+                    val resultScrollMax = resultScrollState.maxValue
+                    val mainScrollMax = scrollState.maxValue
+
+                    scrollState.animateScrollTo(mainScrollMax)
+                    resultScrollState.animateScrollTo(resultScrollMax)
                 }
             }
             
-            // 监听滚动状态变化
-            LaunchedEffect(resultScrollState.maxValue) {
-                if (viewModel.autoScrollToBottom && result.status == AnalysisStatus.PROCESSING && resultScrollState.maxValue > 0) {
-                    val scrollMax = resultScrollState.maxValue
-                    android.util.Log.d("AiAnalysis", "滚动状态变化: 尝试滚动到 $scrollMax")
-                    resultScrollState.animateScrollTo(scrollMax)
-                }
-            }
-
             Card(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -257,7 +249,7 @@ private fun AiAnalysisContent(
                     
                     // 分析状态
                     when (result.status) {
-                        AnalysisStatus.PROCESSING -> {
+                        com.equationl.wxsteplog.aiapi.AnalysisStatus.PROCESSING -> {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -269,10 +261,10 @@ private fun AiAnalysisContent(
                                 Text("分析中...")
                             }
                         }
-                        AnalysisStatus.COMPLETED -> {
+                        com.equationl.wxsteplog.aiapi.AnalysisStatus.COMPLETED -> {
                             Text("分析完成", color = androidx.compose.ui.graphics.Color.Green)
                         }
-                        AnalysisStatus.ERROR -> {
+                        com.equationl.wxsteplog.aiapi.AnalysisStatus.ERROR -> {
                             Text(
                                 "分析出错: ${result.errorMessage ?: "未知错误"}",
                                 color = androidx.compose.ui.graphics.Color.Red
@@ -284,7 +276,7 @@ private fun AiAnalysisContent(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(300.dp)
+                            .heightIn(min = 200.dp, max = 400.dp)
                             .background(
                                 color = MaterialTheme.colorScheme.surfaceVariant,
                                 shape = RoundedCornerShape(8.dp)
@@ -308,12 +300,8 @@ private fun AiAnalysisContent(
                 if (viewModel.isAnalyzing) {
                     viewModel.cancelAnalysis()
                 } else {
-                    scope.launch {
-                        // 首先启用自动滚动
-                        //viewModel.onAutoScrollToBottomChanged(true)
-                        // 开始分析
-                        viewModel.startAnalysis()
-                    }
+                    // 开始分析
+                    viewModel.startAnalysis()
                 }
             },
             modifier = Modifier.fillMaxWidth(),
@@ -383,7 +371,7 @@ private fun RealTimeDataSelectionContent(viewModel: AiAnalysisViewModel) {
             IconButton(onClick = {
                 Toast.makeText(
                     context,
-                    "这会移除同一用户在同一时间重复记录的步数数据", 
+                    "这会移除同一用户未改变的数据，可以减少数据量且不会影响分析结果",
                     Toast.LENGTH_LONG
                 ).show()
             }) {
@@ -406,12 +394,12 @@ private fun DateRangeSelector(viewModel: AiAnalysisViewModel) {
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // 开始日期
-        Row(
+        // 开始日期 - 改为垂直布局以适应小屏幕
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            horizontalAlignment = Alignment.Start
         ) {
-            Text("开始日期:", Modifier.padding(end = 16.dp))
+            Text("开始日期:", Modifier.padding(bottom = 4.dp))
             OutlinedTextField(
                 value = viewModel.formatDate(viewModel.startDate),
                 onValueChange = { },
@@ -425,12 +413,12 @@ private fun DateRangeSelector(viewModel: AiAnalysisViewModel) {
             )
         }
         
-        // 结束日期
-        Row(
+        // 结束日期 - 改为垂直布局以适应小屏幕
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            horizontalAlignment = Alignment.Start
         ) {
-            Text("结束日期:", Modifier.padding(end = 16.dp))
+            Text("结束日期:", Modifier.padding(bottom = 4.dp))
             OutlinedTextField(
                 value = viewModel.formatDate(viewModel.endDate),
                 onValueChange = { },
@@ -521,7 +509,7 @@ private fun ModelSelector(viewModel: AiAnalysisViewModel) {
                 label = { Text("AI模型") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
-                    .menuAnchor()
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
                     .fillMaxWidth()
             )
             
@@ -570,9 +558,10 @@ private fun ModelSelector(viewModel: AiAnalysisViewModel) {
                 Toast.makeText(context, "请先选择一个AI模型", Toast.LENGTH_SHORT).show()
             } else if (!viewModel.isModelConfigured(viewModel.selectedModel)) {
                 // 简单的弹窗输入API Key
-                showApiKeyDialog(context, viewModel)
+                showApiKeyDialog(context, false, viewModel)
             } else {
-                Toast.makeText(context, "模型已配置", Toast.LENGTH_SHORT).show()
+                // 简单的弹窗输入API Key
+                showApiKeyDialog(context, true, viewModel)
             }
         }) {
             Icon(Icons.Filled.Settings, contentDescription = "配置模型")
@@ -583,7 +572,7 @@ private fun ModelSelector(viewModel: AiAnalysisViewModel) {
 /**
  * 显示简单的API Key配置对话框
  */
-private fun showApiKeyDialog(context: Context, viewModel: AiAnalysisViewModel) {
+private fun showApiKeyDialog(context: Context, isEdit: Boolean, viewModel: AiAnalysisViewModel) {
     val editText = EditText(context).apply {
         hint = "请输入API Key"
         inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
@@ -591,7 +580,7 @@ private fun showApiKeyDialog(context: Context, viewModel: AiAnalysisViewModel) {
     }
     
     AlertDialog.Builder(context)
-        .setTitle("配置 ${viewModel.selectedModel}")
+        .setTitle(if (isEdit) "修改 ${viewModel.selectedModel}" else "配置 ${viewModel.selectedModel}")
         .setView(editText)
         .setPositiveButton("保存") { _, _ ->
             val apiKey = editText.text.toString().trim()
@@ -621,6 +610,13 @@ private fun TopBar() {
             }) {
                 Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "返回")
             }
+        },
+        actions = {
+            IconButton(onClick = {
+                navController.navigate(Route.AI_SETTINGS)
+            }) {
+                Icon(Icons.Default.Settings, contentDescription = "AI服务设置")
+            }
         }
     )
 }
@@ -633,18 +629,18 @@ private fun HistoryLogSelector(viewModel: AiAnalysisViewModel) {
     if (viewModel.logHistoryList.isEmpty()) {
         Text("没有可用的历史数据", Modifier.fillMaxWidth())
     } else {
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text("历史记录:", Modifier.padding(end = 16.dp))
+            Text("历史记录:", Modifier.padding(bottom = 4.dp))
             
             var historyExpanded by remember { mutableStateOf(false) }
             val selectedLogTime = viewModel.selectedHistoryLogTime
             val historyText = viewModel.logHistoryList.find { it.logStartTime == selectedLogTime }?.let {
-                val startTimeStr = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(it.startTime ?: 0))
+                val startTimeStr = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(it.startTime))
+                val endTimeStr = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(it.endTime))
 
-                val endTimeStr = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(it.endTime ?: 0))
                 "$startTimeStr ~ $endTimeStr"
             } ?: "选择历史记录"
             
@@ -691,11 +687,11 @@ private fun HistoryLogSelector(viewModel: AiAnalysisViewModel) {
 @Composable
 private fun HistoryUserSelector(viewModel: AiAnalysisViewModel) {
     // 用户选择（历史数据）
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text("用户:", Modifier.padding(end = 16.dp))
+        Text("用户:", Modifier.padding(bottom = 4.dp))
         
         var userExpanded by remember { mutableStateOf(false) }
         val selectedUser = viewModel.selectedHistoryUser
@@ -712,7 +708,7 @@ private fun HistoryUserSelector(viewModel: AiAnalysisViewModel) {
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = userExpanded) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor()
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
             )
             
             ExposedDropdownMenu(
@@ -737,11 +733,11 @@ private fun HistoryUserSelector(viewModel: AiAnalysisViewModel) {
 @Composable
 private fun RealTimeUserSelector(viewModel: AiAnalysisViewModel) {
     // 用户选择（实时数据）
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text("用户:", Modifier.padding(end = 16.dp))
+        Text("用户:", Modifier.padding(bottom = 4.dp))
         
         var userExpanded by remember { mutableStateOf(false) }
         val selectedUser = viewModel.selectedRealtimeUser
@@ -758,7 +754,7 @@ private fun RealTimeUserSelector(viewModel: AiAnalysisViewModel) {
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = userExpanded) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor()
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
             )
             
             ExposedDropdownMenu(

@@ -1,6 +1,5 @@
-package com.equationl.wxsteplog.ai
+package com.equationl.wxsteplog.aiapi
 
-import com.equationl.wxsteplog.db.WxStepHistoryTable
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -14,14 +13,14 @@ interface AiAnalysisInterface {
     fun getSupportedModels(): List<String>
 
     /**
-     * 分析步数数据
-     * @param data 要分析的步数历史数据
+     * 使用CSV格式分析步数数据
+     * @param csvData CSV格式的步数数据
      * @param prompt 额外的分析提示，可选
      * @param modelName 使用的AI模型名称，必须是 [getSupportedModels] 返回的列表中的一个
      * @return 分析结果流，包含分析过程和最终结果
      */
-    suspend fun analyzeStepData(
-        data: List<WxStepHistoryTable>,
+    suspend fun analyzeStepDataWithCsv(
+        csvData: String,
         prompt: String? = null,
         modelName: String
     ): Flow<AiAnalysisResult>

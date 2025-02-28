@@ -23,3 +23,9 @@ dependencyResolutionManagement {
 rootProject.name = "WxStepLog"
 include(":app")
 include(":assists")
+include(":aiapi")
+
+val includePaidModule = providers.gradleProperty("include.paid.module").orNull?.toBoolean() ?: false
+if (includePaidModule) {
+    include(":aipro")
+}

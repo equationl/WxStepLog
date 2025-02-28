@@ -6,6 +6,8 @@ import androidx.compose.runtime.mutableStateOf
 
 object Constants {
     const val WX_HISTORY_LOG_DATA_CSV_HEADER = "id,userName,stepNum,likeNum,userOrder,logStartTime,logEndTime,dataTime,dataTimeString,logModel\n"
+    const val WX_LOG_DATA_CSV_HEADER = "id, userName, stepNum, likeNum, logTimeString, logTime, userOrder, logModel\n"
+
     const val GITHUB_HOME_PAGE = "https://github.com/equationl/WxStepLog"
 
     val allUserNameList = mutableStateListOf<String>()
@@ -18,7 +20,7 @@ object Constants {
     val showDetailLog = mutableStateOf(true)
     val csvDelimiter = mutableStateOf(",")
 
-    val functionList = listOf("读取历史记录（单次读取）", "记录实时数据（连续运行）", "AI分析历史数据")
+    val functionList = listOf("读取历史记录（单次读取）", "记录实时数据（连续运行）", "AI分析数据")
 
     var logWxHistoryStepStartTime: Long = 0
 }

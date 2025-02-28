@@ -13,7 +13,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -33,6 +35,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.text.isDigitsOnly
 import com.equationl.wxsteplog.constants.Constants
+import com.equationl.wxsteplog.constants.Route
 import com.equationl.wxsteplog.ui.LocalNavController
 import com.equationl.wxsteplog.util.datastore.DataKey
 import com.equationl.wxsteplog.util.datastore.DataStoreUtils
@@ -152,6 +155,27 @@ private fun SettingContent() {
             },
             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text),
         )
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // AI设置入口
+        val navController = LocalNavController.current
+        Button(
+            onClick = {
+                navController.navigate(Route.AI_SETTINGS)
+            }
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = "AI设置",
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text("AI分析服务设置")
+            }
+        }
     }
 }
 
