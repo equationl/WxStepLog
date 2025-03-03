@@ -1,4 +1,4 @@
-package com.equationl.wxsteplog.util.datastore
+package com.equationl.common.datastore
 
 object DataKey {
     const val LOG_USER_MODE = "LOG_USER_MODE"

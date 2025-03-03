@@ -34,11 +34,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.text.isDigitsOnly
+import com.equationl.common.datastore.DataKey
+import com.equationl.common.datastore.DataStoreUtils
 import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.constants.Route
 import com.equationl.wxsteplog.ui.LocalNavController
-import com.equationl.wxsteplog.util.datastore.DataKey
-import com.equationl.wxsteplog.util.datastore.DataStoreUtils
 import kotlinx.coroutines.launch
 
 @Composable

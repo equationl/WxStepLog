@@ -53,6 +53,7 @@ android {
 dependencies {
     implementation(project(":assists"))
     implementation(project(":aiapi"))
+    implementation(project(":common"))
 
     val includePaidModule = rootProject.providers.gradleProperty("include.paid.module").orNull?.toBoolean() ?: false
     if (includePaidModule) {

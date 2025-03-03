@@ -1,4 +1,4 @@
-package com.equationl.wxsteplog.util.datastore
+package com.equationl.common.datastore
 
 import android.content.Context
 import androidx.datastore.core.DataStore

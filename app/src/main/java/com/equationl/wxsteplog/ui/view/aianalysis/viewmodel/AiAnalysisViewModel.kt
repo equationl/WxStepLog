@@ -1,12 +1,19 @@
 package com.equationl.wxsteplog.ui.view.aianalysis.viewmodel
 
+import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.equationl.common.constKey.CommonKey
+import com.equationl.wxsteplog.aiapi.AiAnalysisResult
+import com.equationl.wxsteplog.aiapi.AnalysisStatus
+import com.equationl.wxsteplog.aiapi.DataSourceType
+import com.equationl.wxsteplog.aiapi.ModelBean
 import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.db.WxStepDB
 import com.equationl.wxsteplog.db.WxStepDao
@@ -36,18 +43,13 @@ class AiAnalysisViewModel @Inject constructor(
     val supportedModels = aiAnalysisService.getSupportedModels()
     
     // 选择的模型
-    var selectedModel by mutableStateOf(supportedModels.firstOrNull() ?: "")
+    var selectedModel by mutableStateOf(supportedModels.firstOrNull())
         private set
     
     // 用户输入的额外提示
     var userPrompt by mutableStateOf("")
         private set
-    
-    // 数据源类型：历史数据或实时数据
-    enum class DataSourceType {
-        HISTORY, REALTIME
-    }
-    
+
     // 当前选中的数据源类型
     var dataSourceType by mutableStateOf(DataSourceType.REALTIME)
         private set
@@ -82,12 +84,8 @@ class AiAnalysisViewModel @Inject constructor(
         private set
     
     // 分析状态
-    private val _analysisState = MutableStateFlow<com.equationl.wxsteplog.aiapi.AiAnalysisResult?>(null)
-    val analysisState: StateFlow<com.equationl.wxsteplog.aiapi.AiAnalysisResult?> = _analysisState
-    
-    // 选中的数据
-    private var selectedHistoryData = listOf<WxStepHistoryTable>()
-    private var selectedRealtimeData = listOf<WxStepTable>()
+    private val _analysisState = MutableStateFlow<AiAnalysisResult?>(null)
+    val analysisState: StateFlow<AiAnalysisResult?> = _analysisState
     
     // 是否正在分析
     var isAnalyzing by mutableStateOf(false)
@@ -231,7 +229,7 @@ class AiAnalysisViewModel @Inject constructor(
     /**
      * 更新选中的模型
      */
-    fun onModelSelected(model: String) {
+    fun onModelSelected(model: ModelBean) {
         selectedModel = model
     }
     
@@ -268,13 +266,17 @@ class AiAnalysisViewModel @Inject constructor(
      * 加载选中的实时数据
      */
     private suspend fun loadSelectedRealtimeData(): List<WxStepTable> {
+        // TODO 加载不了数据？
         val userName = if (selectedRealtimeUser == "全部用户") "%" else selectedRealtimeUser
         
         val data = wxStepDao.queryRangeDataListByUserName(
             startTime = startDate.time,
             endTime = endDate.time,
-            userName = userName
+            userName = userName,
+            pageSize = Int.MAX_VALUE
         )
+
+        Log.i("el", "loadSelectedRealtimeData: dataSize = ${data.size}, data = $data")
         
         // 剔除重复数据
         return if (removeDuplicates) {
@@ -361,14 +363,21 @@ class AiAnalysisViewModel @Inject constructor(
     /**
      * 开始分析数据
      */
-    fun startAnalysis() {
+    fun startAnalysis(context: Context) {
         if (isAnalyzing) return
-        
+
+        if (selectedModel == null) return
+
+        if (!isModelConfigured(selectedModel!!)) {
+            Toast.makeText(context, "请先配置 ${selectedModel!!.modeShowName}", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         isAnalyzing = true
-        _analysisState.value = com.equationl.wxsteplog.aiapi.AiAnalysisResult(
-            status = com.equationl.wxsteplog.aiapi.AnalysisStatus.PROCESSING,
+        _analysisState.value = AiAnalysisResult(
+            status = AnalysisStatus.PROCESSING,
             content = "",
-            modelName = selectedModel
+            model = selectedModel!!
         )
         
         viewModelScope.launch {
@@ -378,10 +387,10 @@ class AiAnalysisViewModel @Inject constructor(
                     // 加载并转换历史数据
                     val historyData = loadSelectedHistoryData()
                     if (historyData.isEmpty()) {
-                        _analysisState.value = com.equationl.wxsteplog.aiapi.AiAnalysisResult(
-                            status = com.equationl.wxsteplog.aiapi.AnalysisStatus.ERROR,
+                        _analysisState.value = AiAnalysisResult(
+                            status = AnalysisStatus.ERROR,
                             content = "",
-                            modelName = selectedModel,
+                            model = selectedModel!!,
                             errorMessage = "没有找到符合条件的历史数据"
                         )
                         isAnalyzing = false
@@ -392,10 +401,10 @@ class AiAnalysisViewModel @Inject constructor(
                     // 加载并直接转换实时数据
                     val realtimeData = loadSelectedRealtimeData()
                     if (realtimeData.isEmpty()) {
-                        _analysisState.value = com.equationl.wxsteplog.aiapi.AiAnalysisResult(
-                            status = com.equationl.wxsteplog.aiapi.AnalysisStatus.ERROR,
+                        _analysisState.value = AiAnalysisResult(
+                            status = AnalysisStatus.ERROR,
                             content = "",
-                            modelName = selectedModel,
+                            model = selectedModel!!,
                             errorMessage = "没有找到符合条件的实时数据"
                         )
                         isAnalyzing = false
@@ -409,7 +418,8 @@ class AiAnalysisViewModel @Inject constructor(
                 aiAnalysisService.analyzeStepDataWithCsv(
                     csvData = csvData,
                     prompt = userPrompt.takeIf { it.isNotBlank() },
-                    modelName = selectedModel
+                    model = selectedModel!!,
+                    dataSourceType = dataSourceType
                 ).collectLatest { result ->
                     _analysisState.value = result
                     
@@ -423,7 +433,7 @@ class AiAnalysisViewModel @Inject constructor(
                 _analysisState.value = com.equationl.wxsteplog.aiapi.AiAnalysisResult(
                     status = com.equationl.wxsteplog.aiapi.AnalysisStatus.ERROR,
                     content = "",
-                    modelName = selectedModel,
+                    model = selectedModel!!,
                     errorMessage = "分析时发生错误: ${e.message}"
                 )
                 isAnalyzing = false
@@ -449,16 +459,16 @@ class AiAnalysisViewModel @Inject constructor(
     /**
      * 检查模型是否已配置
      */
-    fun isModelConfigured(modelName: String): Boolean {
+    fun isModelConfigured(modelName: ModelBean): Boolean {
         return aiAnalysisService.isModelConfigured(modelName)
     }
     
     /**
      * 保存模型配置
      */
-    fun saveModelConfig(modelName: String, apiKey: String) {
+    fun saveModelConfig(modelName: ModelBean, apiKey: String) {
         viewModelScope.launch {
-            aiAnalysisService.saveModelConfig(modelName, mapOf("apiKey" to apiKey))
+            aiAnalysisService.saveModelConfig(modelName, mapOf(CommonKey.API_KEY to apiKey))
         }
     }
 }

@@ -1,8 +1,8 @@
 package com.equationl.wxsteplog
 
 import android.app.Application
+import com.equationl.common.datastore.DataStoreUtils
 import com.equationl.wxsteplog.util.DefaultCrashCatchHandler
-import com.equationl.wxsteplog.util.datastore.DataStoreUtils
 import com.equationl.wxsteplog.util.log.LogUtil
 import dagger.hilt.android.HiltAndroidApp
 

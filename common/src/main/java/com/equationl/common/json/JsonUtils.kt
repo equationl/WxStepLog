@@ -1,4 +1,4 @@
-package com.equationl.wxsteplog.util
+package com.equationl.common.json
 
 import android.util.Log
 import com.google.gson.Gson
@@ -13,6 +13,7 @@ inline fun <reified T> String.fromJson(): T? {
         Gson().fromJson(this, T::class.java)
     } catch (e: Exception) {
         Log.w("el, JsonUtil", "fromJson: 转换json失败", e)
+        println("====\n$this\n====")
         null
     }
 }

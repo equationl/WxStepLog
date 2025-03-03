@@ -64,6 +64,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.equationl.wxsteplog.aiapi.DataSourceType
 import com.equationl.wxsteplog.constants.Route
 import com.equationl.wxsteplog.ui.LocalNavController
 import com.equationl.wxsteplog.ui.view.aianalysis.viewmodel.AiAnalysisViewModel
@@ -99,6 +100,7 @@ private fun AiAnalysisContent(
     val analysisState by viewModel.analysisState.collectAsState()
     val scrollState = rememberScrollState()
     val resultScrollState = rememberScrollState()
+    val context = LocalContext.current
     
     Column(
         modifier = Modifier
@@ -136,13 +138,13 @@ private fun AiAnalysisContent(
                             modifier = Modifier
                                 .wrapContentWidth()
                                 .selectable(
-                                    selected = viewModel.dataSourceType == AiAnalysisViewModel.DataSourceType.HISTORY,
-                                    onClick = { viewModel.switchDataSourceType(AiAnalysisViewModel.DataSourceType.HISTORY) },
+                                    selected = viewModel.dataSourceType == DataSourceType.HISTORY,
+                                    onClick = { viewModel.switchDataSourceType(DataSourceType.HISTORY) },
                                     role = Role.RadioButton
                                 )
                         ) {
                             RadioButton(
-                                selected = viewModel.dataSourceType == AiAnalysisViewModel.DataSourceType.HISTORY,
+                                selected = viewModel.dataSourceType == DataSourceType.HISTORY,
                                 onClick = null
                             )
                             Text("历史数据", Modifier.padding(start = 8.dp, end = 16.dp))
@@ -153,13 +155,13 @@ private fun AiAnalysisContent(
                             modifier = Modifier
                                 .wrapContentWidth()
                                 .selectable(
-                                    selected = viewModel.dataSourceType == AiAnalysisViewModel.DataSourceType.REALTIME,
-                                    onClick = { viewModel.switchDataSourceType(AiAnalysisViewModel.DataSourceType.REALTIME) },
+                                    selected = viewModel.dataSourceType == DataSourceType.REALTIME,
+                                    onClick = { viewModel.switchDataSourceType(DataSourceType.REALTIME) },
                                     role = Role.RadioButton
                                 )
                         ) {
                             RadioButton(
-                                selected = viewModel.dataSourceType == AiAnalysisViewModel.DataSourceType.REALTIME,
+                                selected = viewModel.dataSourceType == DataSourceType.REALTIME,
                                 onClick = null
                             )
                             Text("实时数据", Modifier.padding(start = 8.dp))
@@ -168,7 +170,7 @@ private fun AiAnalysisContent(
                 }
                 
                 // 根据选中的数据源类型显示不同的数据选择UI
-                if (viewModel.dataSourceType == AiAnalysisViewModel.DataSourceType.HISTORY) {
+                if (viewModel.dataSourceType == DataSourceType.HISTORY) {
                     // 历史数据选择UI
                     HistoryDataSelectionContent(viewModel)
                 } else {
@@ -301,7 +303,7 @@ private fun AiAnalysisContent(
                     viewModel.cancelAnalysis()
                 } else {
                     // 开始分析
-                    viewModel.startAnalysis()
+                    viewModel.startAnalysis(context)
                 }
             },
             modifier = Modifier.fillMaxWidth(),
@@ -504,7 +506,7 @@ private fun ModelSelector(viewModel: AiAnalysisViewModel) {
         ) {
             OutlinedTextField(
                 readOnly = true,
-                value = viewModel.selectedModel.takeIf { it.isNotEmpty() } ?: "请选择AI模型",
+                value = viewModel.selectedModel?.modeShowName ?: "请选择AI模型",
                 onValueChange = {},
                 label = { Text("AI模型") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
@@ -517,6 +519,7 @@ private fun ModelSelector(viewModel: AiAnalysisViewModel) {
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
             ) {
+                // TODO 这里的配置状态 UI 没有实时变更
                 viewModel.supportedModels.forEach { model ->
                     DropdownMenuItem(
                         text = { 
@@ -530,7 +533,7 @@ private fun ModelSelector(viewModel: AiAnalysisViewModel) {
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                 }
-                                Text(model)
+                                Text(model.modeShowName)
                                 if (!viewModel.isModelConfigured(model)) {
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
@@ -554,9 +557,9 @@ private fun ModelSelector(viewModel: AiAnalysisViewModel) {
         // 配置按钮
         IconButton(onClick = {
             // 在实际应用中，这里应该导航到一个模型配置页面
-            if (viewModel.selectedModel.isEmpty()) {
+            if (viewModel.selectedModel == null) {
                 Toast.makeText(context, "请先选择一个AI模型", Toast.LENGTH_SHORT).show()
-            } else if (!viewModel.isModelConfigured(viewModel.selectedModel)) {
+            } else if (!viewModel.isModelConfigured(viewModel.selectedModel!!)) {
                 // 简单的弹窗输入API Key
                 showApiKeyDialog(context, false, viewModel)
             } else {
@@ -580,12 +583,12 @@ private fun showApiKeyDialog(context: Context, isEdit: Boolean, viewModel: AiAna
     }
     
     AlertDialog.Builder(context)
-        .setTitle(if (isEdit) "修改 ${viewModel.selectedModel}" else "配置 ${viewModel.selectedModel}")
+        .setTitle(if (isEdit) "修改 ${viewModel.selectedModel?.modeShowName ?: ""}" else "配置 ${viewModel.selectedModel?.modeShowName ?: ""}")
         .setView(editText)
         .setPositiveButton("保存") { _, _ ->
             val apiKey = editText.text.toString().trim()
             if (apiKey.isNotEmpty()) {
-                viewModel.saveModelConfig(viewModel.selectedModel, apiKey)
+                viewModel.saveModelConfig(viewModel.selectedModel!!, apiKey)
                 Toast.makeText(context, "配置已保存", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(context, "API Key不能为空", Toast.LENGTH_SHORT).show()
@@ -656,7 +659,7 @@ private fun HistoryLogSelector(viewModel: AiAnalysisViewModel) {
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = historyExpanded) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .menuAnchor()
+                        .menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
                 )
                 
                 ExposedDropdownMenu(
@@ -664,8 +667,8 @@ private fun HistoryLogSelector(viewModel: AiAnalysisViewModel) {
                     onDismissRequest = { historyExpanded = false }
                 ) {
                     viewModel.logHistoryList.forEach { historyItem ->
-                        val startTimeStr = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(historyItem.startTime ?: 0))
-                        val endTimeStr = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(historyItem.endTime ?: 0))
+                        val startTimeStr = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(historyItem.startTime))
+                        val endTimeStr = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(historyItem.endTime))
 
                         val itemText = "$startTimeStr ~ $endTimeStr"
                         

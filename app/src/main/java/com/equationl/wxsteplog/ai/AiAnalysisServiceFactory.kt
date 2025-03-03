@@ -1,7 +1,11 @@
 package com.equationl.wxsteplog.ai
 
 import android.util.Log
-import com.equationl.wxsteplog.util.datastore.DataStoreUtils
+import com.equationl.common.datastore.DataStoreUtils
+import com.equationl.wxsteplog.aiapi.AiAnalysisInterface
+import com.equationl.wxsteplog.aiapi.AiAnalysisResult
+import com.equationl.wxsteplog.aiapi.DataSourceType
+import com.equationl.wxsteplog.aiapi.ModelBean
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.lang.reflect.Constructor
@@ -15,7 +19,7 @@ import javax.inject.Singleton
 @Singleton
 class AiAnalysisServiceFactory @Inject constructor(
     private val demoService: DemoAiAnalysisService
-) : com.equationl.wxsteplog.aiapi.AiAnalysisInterface {
+) : AiAnalysisInterface {
 
     companion object {
         private const val TAG = "AiAnalysisFactory"
@@ -32,7 +36,7 @@ class AiAnalysisServiceFactory @Inject constructor(
     
     // 当前使用的AI服务
     @Volatile
-    private var currentService: com.equationl.wxsteplog.aiapi.AiAnalysisInterface = demoService
+    private var currentService: AiAnalysisInterface = demoService
     
     init {
         // 初始化时尝试加载付费服务
@@ -56,7 +60,7 @@ class AiAnalysisServiceFactory @Inject constructor(
             // 使用反射动态加载付费服务类
             val paidServiceClass = Class.forName(PAID_SERVICE_CLASS)
             val constructor: Constructor<*> = paidServiceClass.getDeclaredConstructor()
-            val paidService = constructor.newInstance() as com.equationl.wxsteplog.aiapi.AiAnalysisInterface
+            val paidService = constructor.newInstance() as AiAnalysisInterface
             
             Log.d(TAG, "成功加载付费AI服务: ${paidService::class.java.simpleName}")
             currentService = paidService
@@ -78,7 +82,7 @@ class AiAnalysisServiceFactory @Inject constructor(
             try {
                 val paidServiceClass = Class.forName(PAID_SERVICE_CLASS)
                 val constructor: Constructor<*> = paidServiceClass.getDeclaredConstructor()
-                val paidService = constructor.newInstance() as com.equationl.wxsteplog.aiapi.AiAnalysisInterface
+                val paidService = constructor.newInstance() as AiAnalysisInterface
                 
                 // 保存设置并切换服务
                 DataStoreUtils.putData(KEY_ENABLE_PAID_SERVICE, true)
@@ -124,30 +128,31 @@ class AiAnalysisServiceFactory @Inject constructor(
 
     // 以下是委托给当前服务实现的方法
     
-    override fun getSupportedModels(): List<String> = currentService.getSupportedModels()
+    override fun getSupportedModels(): List<ModelBean> = currentService.getSupportedModels()
 
     override suspend fun analyzeStepDataWithCsv(
-        csvData: String, 
-        prompt: String?, 
-        modelName: String
-    ): Flow<com.equationl.wxsteplog.aiapi.AiAnalysisResult> {
+        csvData: String,
+        prompt: String?,
+        model: ModelBean,
+        dataSourceType: DataSourceType
+    ): Flow<AiAnalysisResult> {
         return if (isUsingPaidService()) {
             // 使用付费服务
-            currentService.analyzeStepDataWithCsv(csvData, prompt, modelName)
+            currentService.analyzeStepDataWithCsv(csvData, prompt, model, dataSourceType)
         } else {
             // 使用演示服务，但添加提示信息
             flow {
                 // 先添加一个提示状态
                 emit(
-                    com.equationl.wxsteplog.aiapi.AiAnalysisResult(
+                    AiAnalysisResult(
                         status = com.equationl.wxsteplog.aiapi.AnalysisStatus.PROCESSING,
                         content = "正在使用演示服务分析...\n(提示: 可通过加载AI Pro模块获得完整AI分析功能)",
-                        modelName = modelName
+                        model = model
                     )
                 )
                 
                 // 然后委托给演示服务
-                val demoFlow = demoService.analyzeStepDataWithCsv(csvData, prompt, modelName)
+                val demoFlow = demoService.analyzeStepDataWithCsv(csvData, prompt, model, dataSourceType)
                 demoFlow.collect { result ->
                     emit(result)
                 }
@@ -155,9 +160,11 @@ class AiAnalysisServiceFactory @Inject constructor(
         }
     }
 
-    override fun isModelConfigured(modelName: String): Boolean = 
-        currentService.isModelConfigured(modelName)
+    override fun isModelConfigured(model: ModelBean): Boolean =
+        currentService.isModelConfigured(model)
 
-    override suspend fun saveModelConfig(modelName: String, config: Map<String, String>) = 
-        currentService.saveModelConfig(modelName, config)
+    override suspend fun saveModelConfig(model: ModelBean, config: Map<String, Any>) =
+        currentService.saveModelConfig(model, config)
+
+    override fun getModelConfig(model: ModelBean): Map<String, Any>? = currentService.getModelConfig(model)
 }

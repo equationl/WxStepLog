@@ -3,6 +3,7 @@ package com.equationl.wxsteplog.ui.view.setting.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.equationl.wxsteplog.ai.AiAnalysisServiceFactory
+import com.equationl.wxsteplog.aiapi.ModelBean
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,9 +18,12 @@ import javax.inject.Inject
 data class AiSettingsUiState(
     val isPaidServiceAvailable: Boolean = false,
     val isPaidServiceEnabled: Boolean = false,
-    val availableModels: List<String> = emptyList(),
-    val selectedModel: String = "",
-    val modelConfigs: Map<String, Map<String, String>> = emptyMap()
+    val availableModels: List<ModelBean> = emptyList(),
+    val selectedModel: ModelBean? = null,
+    /**
+     * {"$modelName" to Map}
+     * */
+    val modelConfigs: Map<String, Map<String, Any>> = emptyMap()
 )
 
 /**
@@ -42,15 +46,11 @@ class AiSettingsViewModel @Inject constructor(
             val isPaidAvailable = aiAnalysisServiceFactory.isPaidServiceAvailable()
             val isUsingPaid = aiAnalysisServiceFactory.isUsingPaidService()
             val models = aiAnalysisInterface.getSupportedModels()
-            
-            // 获取用于显示的模型配置信息
-            val modelConfigs = models.associateWith { modelName ->
-                // 对于演示目的，这里只显示是否已配置
-                if (aiAnalysisInterface.isModelConfigured(modelName)) {
-                    mapOf("apiKey" to "********") // 不显示真实的API密钥
-                } else {
-                    mapOf("apiKey" to "")
-                }
+
+            val newModelConfig = mutableMapOf<String, Map<String, Any>>()
+            for (model in models) {
+                val modelConfig = aiAnalysisServiceFactory.getModelConfig(model) ?: emptyMap()
+                newModelConfig[model.modelName] = modelConfig
             }
             
             _uiState.update { currentState ->
@@ -58,8 +58,8 @@ class AiSettingsViewModel @Inject constructor(
                     isPaidServiceAvailable = isPaidAvailable,
                     isPaidServiceEnabled = isUsingPaid,
                     availableModels = models,
-                    selectedModel = if (models.isNotEmpty()) models[0] else "",
-                    modelConfigs = modelConfigs
+                    selectedModel = if (models.isNotEmpty()) models[0] else null,
+                    modelConfigs = newModelConfig
                 )
             }
         }
@@ -90,7 +90,7 @@ class AiSettingsViewModel @Inject constructor(
      *
      * @param modelName 模型名称
      */
-    fun selectModel(modelName: String) {
+    fun selectModel(modelName: ModelBean) {
         _uiState.update { currentState ->
             currentState.copy(
                 selectedModel = modelName
@@ -101,17 +101,17 @@ class AiSettingsViewModel @Inject constructor(
     /**
      * 保存模型配置
      *
-     * @param modelName 模型名称
+     * @param model 模型名称
      * @param config 配置信息
      */
-    fun saveModelConfig(modelName: String, config: Map<String, String>) {
+    fun saveModelConfig(model: ModelBean, config: Map<String, Any>) {
         viewModelScope.launch {
-            aiAnalysisInterface.saveModelConfig(modelName, config)
+            aiAnalysisInterface.saveModelConfig(model, config)
             
             // 更新UI状态中的配置信息
             val updatedConfigs = _uiState.value.modelConfigs.toMutableMap()
-            updatedConfigs[modelName] = config.mapValues { entry ->
-                if (entry.key == "apiKey" && entry.value.isNotBlank()) "********" else entry.value
+            updatedConfigs[model.modelName] = config.mapValues { entry ->
+                entry.value
             }
             
             _uiState.update { currentState ->

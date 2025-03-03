@@ -40,6 +40,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.equationl.common.constKey.CommonKey
+import com.equationl.wxsteplog.aiapi.ModelBean
 import com.equationl.wxsteplog.ui.LocalNavController
 import com.equationl.wxsteplog.ui.view.setting.viewmodel.AiSettingsViewModel
 import kotlinx.coroutines.launch
@@ -192,14 +194,14 @@ fun AiSettingsScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     // API密钥输入（对于需要配置的模型）
-                    if (uiState.selectedModel != "本地模型" && uiState.selectedModel.isNotBlank()) {
-                        var apiKey by remember { mutableStateOf(uiState.modelConfigs[uiState.selectedModel]?.get("apiKey") ?: "") }
+                    if (uiState.selectedModel?.modelName != "本地模型" && uiState.selectedModel != null) {
+                        var apiKey by remember(uiState.selectedModel) { mutableStateOf((uiState.modelConfigs[uiState.selectedModel?.modelName]?.get(CommonKey.API_KEY) as String?) ?: "") }
                         
                         OutlinedTextField(
                             modifier = Modifier.fillMaxWidth(),
                             value = apiKey,
                             onValueChange = { apiKey = it },
-                            label = { Text("${uiState.selectedModel} API密钥") }
+                            label = { Text("${uiState.selectedModel?.modeShowName ?: ""} API密钥") },
                         )
                         
                         Spacer(modifier = Modifier.height(8.dp))
@@ -207,9 +209,14 @@ fun AiSettingsScreen(
                         Button(
                             modifier = Modifier.align(Alignment.End),
                             onClick = {
-                                viewModel.saveModelConfig(uiState.selectedModel, mapOf("apiKey" to apiKey))
                                 coroutineScope.launch {
-                                    scaffoldState.showSnackbar("已保存 ${uiState.selectedModel} 的配置")
+                                    if (apiKey.isBlank()) {
+                                        scaffoldState.showSnackbar("请输入 API 密钥")
+                                        return@launch
+                                    }
+
+                                    viewModel.saveModelConfig(uiState.selectedModel!!, mapOf(CommonKey.API_KEY to apiKey))
+                                    scaffoldState.showSnackbar("已保存 ${uiState.selectedModel!!.modeShowName} 的配置")
                                 }
                             }
                         ) {
@@ -290,9 +297,9 @@ fun TopAppBar(
 @Composable
 fun DropdownField(
     label: String,
-    options: List<String>,
-    selectedOption: String,
-    onOptionSelected: (String) -> Unit
+    options: List<ModelBean>,
+    selectedOption: ModelBean?,
+    onOptionSelected: (ModelBean) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     
@@ -314,7 +321,7 @@ fun DropdownField(
                         onOptionSelected(option)
                         expanded = false
                     },
-                    text = { Text(text = option) },
+                    text = { Text(text = option.modeShowName) },
                 )
             }
         }
@@ -323,7 +330,7 @@ fun DropdownField(
             modifier = Modifier.fillMaxWidth(),
             onClick = { expanded = true }
         ) {
-            Text(text = selectedOption.ifBlank { "选择模型" })
+            Text(text = selectedOption?.modeShowName ?: "选择模型")
         }
     }
 }

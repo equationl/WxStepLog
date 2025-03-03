@@ -31,6 +31,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import com.equationl.common.datastore.DataKey
+import com.equationl.common.datastore.DataStoreUtils
+import com.equationl.common.json.fromJsonList
+import com.equationl.common.json.toJson
 import com.equationl.wxsteplog.SettingGuideActivity
 import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.constants.Route
@@ -41,10 +45,6 @@ import com.equationl.wxsteplog.step.OverManager
 import com.equationl.wxsteplog.ui.LocalNavController
 import com.equationl.wxsteplog.ui.view.continuousLog.widget.ContinuousLogSettingContent
 import com.equationl.wxsteplog.util.Utils
-import com.equationl.wxsteplog.util.datastore.DataKey
-import com.equationl.wxsteplog.util.datastore.DataStoreUtils
-import com.equationl.wxsteplog.util.fromJsonList
-import com.equationl.wxsteplog.util.toJson
 import com.ven.assists.Assists
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

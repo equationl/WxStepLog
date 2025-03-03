@@ -41,14 +41,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import com.equationl.common.datastore.DataKey
+import com.equationl.common.datastore.DataStoreUtils
 import com.equationl.wxsteplog.R
 import com.equationl.wxsteplog.SettingGuideActivity
 import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.constants.Route
 import com.equationl.wxsteplog.ui.LocalNavController
 import com.equationl.wxsteplog.util.Utils
-import com.equationl.wxsteplog.util.datastore.DataKey
-import com.equationl.wxsteplog.util.datastore.DataStoreUtils
 import com.ven.assists.Assists
 
 @Composable

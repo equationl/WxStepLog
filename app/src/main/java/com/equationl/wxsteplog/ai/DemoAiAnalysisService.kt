@@ -1,7 +1,13 @@
 package com.equationl.wxsteplog.ai
 
+import com.equationl.common.datastore.DataStoreUtils
+import com.equationl.common.json.fromJson
+import com.equationl.common.json.toJson
+import com.equationl.wxsteplog.aiapi.AiAnalysisInterface
+import com.equationl.wxsteplog.aiapi.AiAnalysisResult
+import com.equationl.wxsteplog.aiapi.DataSourceType
+import com.equationl.wxsteplog.aiapi.ModelBean
 import com.equationl.wxsteplog.constants.Constants
-import com.equationl.wxsteplog.util.datastore.DataStoreUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -15,35 +21,36 @@ import javax.inject.Singleton
  */
 @Singleton
 class DemoAiAnalysisService @Inject constructor() :
-    com.equationl.wxsteplog.aiapi.AiAnalysisInterface {
+    AiAnalysisInterface {
 
     companion object {
         // 支持的AI模型列表
         private val SUPPORTED_MODELS = listOf(
-            "OpenAI GPT-3.5",
-            "OpenAI GPT-4",
-            "Azure OpenAI",
-            "本地模型"
+            ModelBean("OpenAI GPT-3.5", "OpenAI GPT-3.5"),
+            ModelBean("OpenAI GPT-4", "OpenAI GPT-4"),
+            ModelBean("Azure OpenAI", "Azure OpenAI"),
+            ModelBean("本地模型", "本地模型"),
         )
         
         // 配置项的Key前缀
         private const val CONFIG_PREFIX = "AI_MODEL_CONFIG_"
     }
 
-    override fun getSupportedModels(): List<String> = SUPPORTED_MODELS
+    override fun getSupportedModels(): List<ModelBean> = SUPPORTED_MODELS
 
     override suspend fun analyzeStepDataWithCsv(
         csvData: String,
         prompt: String?,
-        modelName: String
-    ): Flow<com.equationl.wxsteplog.aiapi.AiAnalysisResult> = flow {
+        model: ModelBean,
+        dataSourceType: DataSourceType
+    ): Flow<AiAnalysisResult> = flow {
         // 检查模型是否配置
-        if (!isModelConfigured(modelName)) {
+        if (!isModelConfigured(model)) {
             emit(
-                com.equationl.wxsteplog.aiapi.AiAnalysisResult(
+                AiAnalysisResult(
                     status = com.equationl.wxsteplog.aiapi.AnalysisStatus.ERROR,
                     content = "",
-                    modelName = modelName,
+                    model = model,
                     errorMessage = "模型未正确配置，请在设置中配置API密钥"
                 )
             )
@@ -52,10 +59,10 @@ class DemoAiAnalysisService @Inject constructor() :
         
         // 发出处理中的状态
         emit(
-            com.equationl.wxsteplog.aiapi.AiAnalysisResult(
+            AiAnalysisResult(
                 status = com.equationl.wxsteplog.aiapi.AnalysisStatus.PROCESSING,
                 content = "正在准备CSV格式数据进行分析...",
-                modelName = modelName
+                model = model
             )
         )
         
@@ -66,10 +73,10 @@ class DemoAiAnalysisService @Inject constructor() :
         
         if (dataCount <= 0) {
             emit(
-                com.equationl.wxsteplog.aiapi.AiAnalysisResult(
+                AiAnalysisResult(
                     status = com.equationl.wxsteplog.aiapi.AnalysisStatus.ERROR,
                     content = "",
-                    modelName = modelName,
+                    model = model,
                     errorMessage = "CSV数据为空或格式不正确"
                 )
             )
@@ -77,10 +84,10 @@ class DemoAiAnalysisService @Inject constructor() :
         }
         
         emit(
-            com.equationl.wxsteplog.aiapi.AiAnalysisResult(
+            AiAnalysisResult(
                 status = com.equationl.wxsteplog.aiapi.AnalysisStatus.PROCESSING,
                 content = "分析中...\n已收集 $dataCount 条CSV格式数据，准备分析",
-                modelName = modelName
+                model = model
             )
         )
         
@@ -92,7 +99,7 @@ class DemoAiAnalysisService @Inject constructor() :
         
         // 构建示例分析结果
         val analysisResult = buildString {
-            appendLine("CSV格式步数数据分析报告（${modelName}）")
+            appendLine("CSV格式步数数据分析报告（${model}）")
             appendLine("===============================")
             appendLine("数据概览:")
             appendLine("- 总记录数: $dataCount")
@@ -115,27 +122,35 @@ class DemoAiAnalysisService @Inject constructor() :
         
         // 发送最终结果
         emit(
-            com.equationl.wxsteplog.aiapi.AiAnalysisResult(
+            AiAnalysisResult(
                 status = com.equationl.wxsteplog.aiapi.AnalysisStatus.COMPLETED,
                 content = analysisResult,
-                modelName = modelName
+                model = model
             )
         )
     }
 
-    override fun isModelConfigured(modelName: String): Boolean {
-        val configKey = "$CONFIG_PREFIX$modelName"
-        return when (modelName) {
+    override fun isModelConfigured(model: ModelBean): Boolean {
+        val configKey = "$CONFIG_PREFIX${model.modelName}"
+        return when (model.modelName) {
             "本地模型" -> true  // 本地模型不需要API密钥
             else -> DataStoreUtils.getSyncData(configKey, "") != ""
         }
     }
 
-    override suspend fun saveModelConfig(modelName: String, config: Map<String, String>) {
-        val configKey = "$CONFIG_PREFIX$modelName"
-        // 简单实现：将配置序列化为字符串存储
-        // 实际项目中可能需要更复杂的加密存储
-        val configString = config.entries.joinToString(";") { "${it.key}=${it.value}" }
-        DataStoreUtils.putData(configKey, configString)
+    override suspend fun saveModelConfig(model: ModelBean, config: Map<String, Any>) {
+        val configKey = "$CONFIG_PREFIX${model.modelName}"
+        val configString = config.toJson()
+        DataStoreUtils.putSyncData(configKey, configString)
+    }
+
+    override fun getModelConfig(model: ModelBean): Map<String, Any>? {
+        val configKey = "${CONFIG_PREFIX}${model.modelName}"
+        val configString = DataStoreUtils.getSyncData(configKey, "")
+        return if (configString.isNotBlank()) {
+            configString.fromJson<Map<String, Any>>() ?: emptyMap()
+        } else {
+            emptyMap()
+        }
     }
 }
