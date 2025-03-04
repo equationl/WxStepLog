@@ -108,7 +108,8 @@ APP 截图：
 1. 使用 Android Studio 打开项目，新建一个名为 "aipro" 的模块，需要确保模块包名为 "com.equationl.wxsteplog.aipro"
 2. 检查并修改 `settings.gradle.kts` 文件，将该模块加入项目中；检查并修改 app 模块的 `build.gradle.kts` 文件，确保添加了 "aipro" 依赖。
 3. 步骤 2 也可以简单的通过修改 `gradle.properties` 文件，将 `include.paid.module` 修改为 true，则会自动引入模块。但是使用该方法需要确保 "aipro" 模块没有被重复引用。
-4. 在 "aipro" 模块中添加一个类 `ProAiAnalysisService` 继承自 `AiAnalysisInterface` 并实现相应的方法，接入需要的 AI 服务商即可。
+4. "aipro" 模块需要依赖 "aiapi" 模块：`implementation project(':aiapi')`，其他模块可以按需依赖，但是注意不能依赖 "app" 模块，否则会导致循环依赖。
+5. 在 "aipro" 模块中添加一个类 `ProAiAnalysisService` 继承自 `AiAnalysisInterface` 并实现相应的方法，接入需要的 AI 服务商即可。
 
 # 更新记录
 
