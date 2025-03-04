@@ -1,5 +1,6 @@
 package com.equationl.wxsteplog.ai
 
+import android.util.Log
 import com.equationl.common.datastore.DataStoreUtils
 import com.equationl.common.json.fromJson
 import com.equationl.common.json.toJson
@@ -24,6 +25,8 @@ class DemoAiAnalysisService @Inject constructor() :
     AiAnalysisInterface {
 
     companion object {
+        private const val TAG = "DemoAiAnalysisService"
+
         // 支持的AI模型列表
         private val SUPPORTED_MODELS = listOf(
             ModelBean("OpenAI GPT-3.5", "OpenAI GPT-3.5"),
@@ -128,6 +131,10 @@ class DemoAiAnalysisService @Inject constructor() :
                 model = model
             )
         )
+    }
+
+    override fun cancelAnalysis() {
+        Log.i(TAG, "cancelAnalysis: Stub!")
     }
 
     override fun isModelConfigured(model: ModelBean): Boolean {

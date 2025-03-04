@@ -60,10 +60,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.equationl.wxsteplog.aiapi.AnalysisStatus
 import com.equationl.wxsteplog.aiapi.DataSourceType
 import com.equationl.wxsteplog.constants.Route
 import com.equationl.wxsteplog.ui.LocalNavController
@@ -225,7 +227,7 @@ private fun AiAnalysisContent(
         
         // 分析结果展示
         analysisState?.let { result ->
-            LaunchedEffect(result.content, result.status) {
+            LaunchedEffect(result.content, result.status, result.thinkingContent) {
                 if (viewModel.autoScrollToBottom) {
                     // 延迟一小段时间，确保布局已经更新
                     delay(100)
@@ -251,7 +253,7 @@ private fun AiAnalysisContent(
                     
                     // 分析状态
                     when (result.status) {
-                        com.equationl.wxsteplog.aiapi.AnalysisStatus.PROCESSING -> {
+                        AnalysisStatus.PROCESSING -> {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -263,14 +265,27 @@ private fun AiAnalysisContent(
                                 Text("分析中...")
                             }
                         }
-                        com.equationl.wxsteplog.aiapi.AnalysisStatus.COMPLETED -> {
-                            Text("分析完成", color = androidx.compose.ui.graphics.Color.Green)
+                        AnalysisStatus.COMPLETED -> {
+                            Text("分析完成", color = Color.Green)
                         }
-                        com.equationl.wxsteplog.aiapi.AnalysisStatus.ERROR -> {
+                        AnalysisStatus.ERROR -> {
                             Text(
                                 "分析出错: ${result.errorMessage ?: "未知错误"}",
-                                color = androidx.compose.ui.graphics.Color.Red
+                                color = Color.Red
                             )
+                        }
+
+                        AnalysisStatus.THINKING -> {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                                Text("思考中...")
+                            }
                         }
                     }
                     
@@ -284,13 +299,25 @@ private fun AiAnalysisContent(
                                 shape = RoundedCornerShape(8.dp)
                             )
                     ) {
-                        Text(
-                            text = result.content.takeIf { it.isNotBlank() } ?: "暂无分析结果",
+                        Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(12.dp)
                                 .verticalScroll(resultScrollState)
-                        )
+                        ) {
+                            result.thinkingContent ?.let {
+                                Text(
+                                    text = it,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                    modifier = Modifier.padding(12.dp)
+                                )
+                            }
+
+                            Text(
+                                text = result.content,
+                                modifier = Modifier
+                                    .padding(12.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -385,6 +412,7 @@ private fun RealTimeDataSelectionContent(viewModel: AiAnalysisViewModel) {
 
 /**
  * 日期范围选择组件
+ * TODO 默认值改成通过数据获取
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -743,7 +771,7 @@ private fun RealTimeUserSelector(viewModel: AiAnalysisViewModel) {
         Text("用户:", Modifier.padding(bottom = 4.dp))
         
         var userExpanded by remember { mutableStateOf(false) }
-        val selectedUser = viewModel.selectedRealtimeUser
+        val selectedUser = viewModel.realtimeUserList[viewModel.selectedRealtimeUserIndex]
         
         ExposedDropdownMenuBox(
             expanded = userExpanded,
@@ -764,11 +792,11 @@ private fun RealTimeUserSelector(viewModel: AiAnalysisViewModel) {
                 expanded = userExpanded,
                 onDismissRequest = { userExpanded = false }
             ) {
-                viewModel.realtimeUserList.forEach { userName ->
+                viewModel.realtimeUserList.forEachIndexed {index,userName ->
                     DropdownMenuItem(
                         text = { Text(userName) },
                         onClick = {
-                            viewModel.onRealtimeUserSelected(userName)
+                            viewModel.onRealtimeUserSelected(index)
                             userExpanded = false
                         }
                     )

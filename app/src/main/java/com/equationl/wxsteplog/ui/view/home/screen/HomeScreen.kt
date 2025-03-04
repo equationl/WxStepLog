@@ -92,12 +92,7 @@ private fun HomePage(isAccessibilityServiceEnabled: MutableState<Boolean>) {
         }
     }
 
-    if (isAccessibilityServiceEnabled.value) {
-        HomeContent()
-    }
-    else {
-        OpenAccessibilityServiceContent()
-    }
+    HomeContent(isAccessibilityServiceEnabled)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -136,13 +131,11 @@ private fun OpenAccessibilityServiceContent() {
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 32.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.Center,
+            .fillMaxWidth()
+            .padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("本程序基于无障碍服务实现自动操作及其记录数据，如需使用请先打开无障碍服务", style = MaterialTheme.typography.bodySmall)
+        Text("本程序基于无障碍服务实现自动操作及其记录数据，如需使用记录功能请先打开无障碍服务", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
         Spacer(Modifier.height(8.dp))
         OutlinedButton(
             onClick = {
@@ -156,7 +149,7 @@ private fun OpenAccessibilityServiceContent() {
 }
 
 @Composable
-private fun HomeContent() {
+private fun HomeContent(isAccessibilityServiceEnabled: MutableState<Boolean>) {
     val navController = LocalNavController.current
 
     Column(
@@ -167,6 +160,11 @@ private fun HomeContent() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        if (!isAccessibilityServiceEnabled.value) {
+            OpenAccessibilityServiceContent()
+            Spacer(Modifier.height(32.dp))
+        }
+
         Text("提示：请选择一个功能后开始运行", style = MaterialTheme.typography.bodySmall)
         Spacer(Modifier.height(16.dp))
         val selectedOption = remember { mutableIntStateOf(0) }
@@ -221,7 +219,8 @@ private fun HomeContent() {
                 }.let {
                     navController.navigate(it)
                 }
-            }
+            },
+            enabled = !(!isAccessibilityServiceEnabled.value && (selectedOption.intValue == 0 || selectedOption.intValue == 1))
         ) {
             Text("开始运行")
         }

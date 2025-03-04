@@ -160,6 +160,10 @@ class AiAnalysisServiceFactory @Inject constructor(
         }
     }
 
+    override fun cancelAnalysis() {
+        currentService.cancelAnalysis()
+    }
+
     override fun isModelConfigured(model: ModelBean): Boolean =
         currentService.isModelConfigured(model)
 

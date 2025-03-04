@@ -27,6 +27,11 @@ interface AiAnalysisInterface {
     ): Flow<AiAnalysisResult>
 
     /**
+     * 停止分析
+     * */
+    fun cancelAnalysis()
+
+    /**
      * 检查AI模型是否已正确配置（如API密钥等）
      * @param model 模型名称
      * @return 如果配置有效则返回true
@@ -54,7 +59,8 @@ data class AiAnalysisResult(
     val status: AnalysisStatus,
     val content: String,
     val model: ModelBean,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val thinkingContent: String? = null
 )
 
 /**
@@ -63,7 +69,8 @@ data class AiAnalysisResult(
 enum class AnalysisStatus {
     PROCESSING,  // 分析中
     COMPLETED,   // 分析完成
-    ERROR        // 发生错误
+    ERROR,       // 发生错误
+    THINKING,    // 思考中
 }
 
 data class ModelBean(

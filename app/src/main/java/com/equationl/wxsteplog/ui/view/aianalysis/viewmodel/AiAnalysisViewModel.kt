@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -22,11 +23,15 @@ import com.equationl.wxsteplog.db.WxStepTable
 import com.equationl.wxsteplog.model.StepHistoryLogStartTimeDbModel
 import com.equationl.wxsteplog.util.CsvUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
@@ -66,7 +71,7 @@ class AiAnalysisViewModel @Inject constructor(
     
     // 用户列表（实时数据）
     val realtimeUserList = mutableStateListOf<String>()
-    var selectedRealtimeUser by mutableStateOf("")
+    var selectedRealtimeUserIndex by mutableIntStateOf(0)
         private set
     
     // 数据选择配置
@@ -90,11 +95,16 @@ class AiAnalysisViewModel @Inject constructor(
     // 是否正在分析
     var isAnalyzing by mutableStateOf(false)
         private set
+
+
+    private var analysisJob: Job? = null
     
     // 初始化数据
     init {
-        loadLogHistoryList()
-        loadRealtimeUserList()
+        viewModelScope.launch {
+            // loadLogHistoryList()
+            loadRealtimeUserList()
+        }
     }
     
     /**
@@ -105,64 +115,60 @@ class AiAnalysisViewModel @Inject constructor(
         dataSourceType = type
         
         // 根据数据源类型重新加载相关数据
-        if (type == DataSourceType.HISTORY) {
-            loadLogHistoryList()
-        } else {
-            loadRealtimeUserList()
+        viewModelScope.launch {
+            if (type == DataSourceType.HISTORY) {
+                loadLogHistoryList()
+            } else {
+                loadRealtimeUserList()
+            }
         }
     }
     
     /**
      * 加载历史记录列表
      */
-    fun loadLogHistoryList() {
-        viewModelScope.launch {
-            logHistoryList.clear()
-            logHistoryList.addAll(wxStepHistoryDao.getLogStartTimeList())
-            
-            if (logHistoryList.isNotEmpty()) {
-                selectedHistoryLogTime = logHistoryList.first().logStartTime
-                loadHistoryUserList()
-            }
+    private suspend fun loadLogHistoryList() {
+        logHistoryList.clear()
+        logHistoryList.addAll(wxStepHistoryDao.getLogStartTimeList())
+
+        if (logHistoryList.isNotEmpty()) {
+            selectedHistoryLogTime = logHistoryList.first().logStartTime
+            loadHistoryUserList()
         }
     }
     
     /**
      * 加载历史数据用户列表
      */
-    fun loadHistoryUserList() {
-        viewModelScope.launch {
-            historyUserList.clear()
-            historyUserList.add("全部用户") // 添加一个特殊选项表示所有用户
-            historyUserList.addAll(wxStepHistoryDao.getCurrentUserList())
-            selectedHistoryUser = historyUserList.first()
-            
-            // 初始化日期范围
-            val historyModel = logHistoryList.find { it.logStartTime == selectedHistoryLogTime }
-            historyModel?.let {
-                startDate = Date(it.startTime ?: 0)
-                endDate = Date(it.endTime ?: Date().time)
-            }
+    private suspend fun loadHistoryUserList() {
+        historyUserList.clear()
+        historyUserList.add("全部用户") // 添加一个特殊选项表示所有用户
+        historyUserList.addAll(wxStepHistoryDao.getCurrentUserList())
+        selectedHistoryUser = historyUserList.first()
+
+        // 初始化日期范围
+        val historyModel = logHistoryList.find { it.logStartTime == selectedHistoryLogTime }
+        historyModel?.let {
+            startDate = Date(it.startTime)
+            endDate = Date(it.endTime)
         }
     }
     
     /**
      * 加载实时数据用户列表
      */
-    fun loadRealtimeUserList() {
-        viewModelScope.launch {
-            realtimeUserList.clear()
-            realtimeUserList.add("全部用户") // 添加一个特殊选项表示所有用户
-            realtimeUserList.addAll(wxStepDao.getCurrentUserList())
-            selectedRealtimeUser = realtimeUserList.first()
-            
-            // 初始化日期范围为今天和昨天
-            val calendar = java.util.Calendar.getInstance()
-            endDate = calendar.time
-            
-            calendar.add(java.util.Calendar.DAY_OF_MONTH, -1)
-            startDate = calendar.time
-        }
+    private suspend fun loadRealtimeUserList() {
+        realtimeUserList.clear()
+        realtimeUserList.add("全部用户") // 添加一个特殊选项表示所有用户
+        realtimeUserList.addAll(wxStepDao.getCurrentUserList())
+        selectedRealtimeUserIndex = 0
+
+        // 初始化日期范围为今天和昨天
+        val calendar = Calendar.getInstance()
+        endDate = calendar.time
+
+        calendar.add(Calendar.DAY_OF_MONTH, -1)
+        startDate = calendar.time
     }
     
     /**
@@ -176,11 +182,13 @@ class AiAnalysisViewModel @Inject constructor(
         // 更新日期范围
         val historyModel = logHistoryList.find { it.logStartTime == selectedHistoryLogTime }
         historyModel?.let {
-            startDate = Date(it.startTime ?: 0)
-            endDate = Date(it.endTime ?: Date().time)
+            startDate = Date(it.startTime)
+            endDate = Date(it.endTime)
         }
-        
-        loadHistoryUserList()
+
+        viewModelScope.launch {
+            loadHistoryUserList()
+        }
     }
     
     /**
@@ -193,8 +201,8 @@ class AiAnalysisViewModel @Inject constructor(
     /**
      * 更新选中的实时数据用户
      */
-    fun onRealtimeUserSelected(user: String) {
-        selectedRealtimeUser = user
+    fun onRealtimeUserSelected(index: Int) {
+        selectedRealtimeUserIndex = index
     }
     
     /**
@@ -266,15 +274,20 @@ class AiAnalysisViewModel @Inject constructor(
      * 加载选中的实时数据
      */
     private suspend fun loadSelectedRealtimeData(): List<WxStepTable> {
-        // TODO 加载不了数据？
-        val userName = if (selectedRealtimeUser == "全部用户") "%" else selectedRealtimeUser
-        
-        val data = wxStepDao.queryRangeDataListByUserName(
-            startTime = startDate.time,
-            endTime = endDate.time,
-            userName = userName,
-            pageSize = Int.MAX_VALUE
-        )
+        val data = if (selectedRealtimeUserIndex == 0) {
+            wxStepDao.queryRangeDataList(
+                startTime = startDate.time,
+                endTime = endDate.time,
+                pageSize = Int.MAX_VALUE
+            )
+        } else {
+            wxStepDao.queryRangeDataListByUserName(
+                startTime = startDate.time,
+                endTime = endDate.time,
+                userName = realtimeUserList[selectedRealtimeUserIndex],
+                pageSize = Int.MAX_VALUE
+            )
+        }
 
         Log.i("el", "loadSelectedRealtimeData: dataSize = ${data.size}, data = $data")
         
@@ -308,22 +321,17 @@ class AiAnalysisViewModel @Inject constructor(
         val stringBuilder = StringBuilder()
         
         // 添加CSV表头
-        stringBuilder.append(Constants.WX_HISTORY_LOG_DATA_CSV_HEADER)
+        stringBuilder.append(Constants.WX_HISTORY_LOG_DATA_ANALYZE_CSV_HEADER)
         
         // 添加数据行
         dataList.forEach { data ->
             stringBuilder.append(
                 CsvUtil.encodeCsvLineString(
-                    data.id,
                     data.userName,
                     data.stepNum,
                     data.likeNum,
                     data.userOrder,
-                    data.logStartTime,
-                    data.logEndTime,
-                    data.dataTime,
                     data.dataTimeString,
-                    data.logModel
                 )
             )
         }
@@ -339,20 +347,17 @@ class AiAnalysisViewModel @Inject constructor(
         val stringBuilder = StringBuilder()
         
         // 添加CSV表头
-        stringBuilder.append(Constants.WX_LOG_DATA_CSV_HEADER)
+        stringBuilder.append(Constants.WX_LOG_DATA_ANALYZE_CSV_HEADER)
         
         // 添加数据行 - 将实时数据映射到CSV格式
         dataList.forEach { row ->
             stringBuilder.append(
                 CsvUtil.encodeCsvLineString(
-                    row.id,
                     row.userName,
                     row.stepNum,
                     row.likeNum,
-                    row.logTimeString,
-                    row.logTime,
                     row.userOrder,
-                    row.logModel
+                    row.logTimeString,
                 )
             )
         }
@@ -380,7 +385,7 @@ class AiAnalysisViewModel @Inject constructor(
             model = selectedModel!!
         )
         
-        viewModelScope.launch {
+        analysisJob = viewModelScope.launch(Dispatchers.IO) {
             try {
                 // 转换为CSV格式的数据
                 val csvData = if (dataSourceType == DataSourceType.HISTORY) {
@@ -421,20 +426,21 @@ class AiAnalysisViewModel @Inject constructor(
                     model = selectedModel!!,
                     dataSourceType = dataSourceType
                 ).collectLatest { result ->
+                    println("这里是最终接收到的结果： $result")
                     _analysisState.value = result
-                    
-                    // 分析完成或出错时，停止自动滚动
-                    if (result.status != com.equationl.wxsteplog.aiapi.AnalysisStatus.PROCESSING) {
+
+                    if (result.status != AnalysisStatus.PROCESSING && result.status != AnalysisStatus.THINKING) {
                         isAnalyzing = false
                     }
                 }
             } catch (e: Exception) {
                 Log.e("AiAnalysis", "Analysis error", e)
-                _analysisState.value = com.equationl.wxsteplog.aiapi.AiAnalysisResult(
-                    status = com.equationl.wxsteplog.aiapi.AnalysisStatus.ERROR,
-                    content = "",
+                _analysisState.value = AiAnalysisResult(
+                    status = AnalysisStatus.ERROR,
+                    content = _analysisState.value?.content ?: "",
                     model = selectedModel!!,
-                    errorMessage = "分析时发生错误: ${e.message}"
+                    errorMessage = "分析时发生错误: ${e.message}",
+                    thinkingContent = _analysisState.value?.thinkingContent ?: ""
                 )
                 isAnalyzing = false
             }
@@ -443,10 +449,28 @@ class AiAnalysisViewModel @Inject constructor(
     
     /**
      * 取消分析
+     *
      */
     fun cancelAnalysis() {
-        isAnalyzing = false
-        _analysisState.value = null
+        viewModelScope.launch {
+            val tempValue = _analysisState.value
+            aiAnalysisService.cancelAnalysis()
+            analysisJob?.cancel()
+
+            isAnalyzing = false
+
+            delay(500)
+
+            if (_analysisState.value?.status == AnalysisStatus.PROCESSING) {
+                _analysisState.value = AiAnalysisResult(
+                    status = AnalysisStatus.ERROR,
+                    content = tempValue?.content ?: "",
+                    model = selectedModel!!,
+                    errorMessage = "分析已取消",
+                    thinkingContent = tempValue?.thinkingContent ?: ""
+                )
+            }
+        }
     }
     
     /**

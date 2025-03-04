@@ -8,6 +8,9 @@ object Constants {
     const val WX_HISTORY_LOG_DATA_CSV_HEADER = "id,userName,stepNum,likeNum,userOrder,logStartTime,logEndTime,dataTime,dataTimeString,logModel\n"
     const val WX_LOG_DATA_CSV_HEADER = "id, userName, stepNum, likeNum, logTimeString, logTime, userOrder, logModel\n"
 
+    const val WX_HISTORY_LOG_DATA_ANALYZE_CSV_HEADER = "名称,步数,点赞数,好友排名,日期\n"
+    const val WX_LOG_DATA_ANALYZE_CSV_HEADER = "名称,步数,点赞数,好友排名,日期时间\n"
+
     const val GITHUB_HOME_PAGE = "https://github.com/equationl/WxStepLog"
 
     val allUserNameList = mutableStateListOf<String>()
