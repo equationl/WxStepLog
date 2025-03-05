@@ -86,6 +86,8 @@ dependencies {
     implementation(libs.vico.compose.m3)
     implementation(libs.dialog.core)
     implementation(libs.baserecyclerviewadapterhelper)
+    implementation (libs.markwon.core)
+    implementation (libs.html)
 
     ksp(libs.androidx.room.compiler)
     ksp(libs.dagger.compiler)

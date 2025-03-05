@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.equationl.wxsteplog.model.StepHistoryLogStartTimeDbModel
+import com.equationl.wxsteplog.model.StepLogRangeTimeDbModel
 
 @Dao
 interface WxStepDao{
@@ -25,6 +26,15 @@ interface WxStepDao{
 
     @Query("SELECT DISTINCT user_name FROM wx_step_table")
     suspend fun getCurrentUserList(): List<String>
+
+    @Query("""
+    SELECT 
+        MIN(log_time) as minTime,
+        MAX(log_time) as maxTime 
+    FROM wx_step_table 
+    WHERE (:userName IS NULL OR user_name = :userName)
+""")
+    suspend fun getUserTimeRange(userName: String? = null): StepLogRangeTimeDbModel
 }
 
 

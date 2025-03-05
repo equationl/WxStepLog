@@ -89,7 +89,7 @@ class DemoAiAnalysisService @Inject constructor() :
         emit(
             AiAnalysisResult(
                 status = com.equationl.wxsteplog.aiapi.AnalysisStatus.PROCESSING,
-                content = "分析中...\n已收集 $dataCount 条CSV格式数据，准备分析",
+                content = "分析中...\n\n已收集 $dataCount 条CSV格式数据，准备分析",
                 model = model
             )
         )
@@ -103,23 +103,34 @@ class DemoAiAnalysisService @Inject constructor() :
         // 构建示例分析结果
         val analysisResult = buildString {
             appendLine("CSV格式步数数据分析报告（${model}）")
+            appendLine()
             appendLine("===============================")
+            appendLine()
             appendLine("数据概览:")
+            appendLine()
             appendLine("- 总记录数: $dataCount")
+            appendLine()
             appendLine("- 数据格式: CSV")
             appendLine()
-            
+
             appendLine("CSV数据示例:")
+            appendLine()
             val sampleLines = lines.take(3).joinToString("\n")
+            appendLine()
             appendLine(sampleLines)
+            appendLine()
             appendLine("...")
+            appendLine()
             appendLine("===============================")
+            appendLine()
             appendLine("当前分析功能为本地模拟生成示例，仅用于演示功能逻辑和界面布局，非 AI 分析数据")
             
             if (!prompt.isNullOrBlank()) {
                 appendLine()
                 appendLine("根据您的提示「$prompt」进行的额外分析:")
+                appendLine()
                 appendLine("- 此功能需要连接真实AI模型，当前为示例实现")
+                appendLine()
             }
         }
         

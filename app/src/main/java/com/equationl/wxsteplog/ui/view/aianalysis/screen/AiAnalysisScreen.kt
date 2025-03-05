@@ -1,6 +1,8 @@
 package com.equationl.wxsteplog.ui.view.aianalysis.screen
 
 import android.app.AlertDialog
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.text.InputType
 import android.widget.EditText
@@ -70,6 +72,7 @@ import com.equationl.wxsteplog.aiapi.DataSourceType
 import com.equationl.wxsteplog.constants.Route
 import com.equationl.wxsteplog.ui.LocalNavController
 import com.equationl.wxsteplog.ui.view.aianalysis.viewmodel.AiAnalysisViewModel
+import com.equationl.wxsteplog.ui.widget.MarkdownText
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -266,7 +269,20 @@ private fun AiAnalysisContent(
                             }
                         }
                         AnalysisStatus.COMPLETED -> {
-                            Text("分析完成", color = Color.Green)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("分析完成", color = Color.Green)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                TextButton(onClick = {
+                                    val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                    val clipData = ClipData.newPlainText("analysisResult", "${result.thinkingContent?:""}\n\n${result.content}")
+                                    clipboardManager.setPrimaryClip(clipData)
+                                    Toast.makeText(context, "复制成功", Toast.LENGTH_SHORT).show()
+                                }) {
+                                    Text("复制")
+                                }
+                            }
                         }
                         AnalysisStatus.ERROR -> {
                             Text(
@@ -288,7 +304,7 @@ private fun AiAnalysisContent(
                             }
                         }
                     }
-                    
+
                     // 分析内容
                     Box(
                         modifier = Modifier
@@ -305,18 +321,27 @@ private fun AiAnalysisContent(
                                 .verticalScroll(resultScrollState)
                         ) {
                             result.thinkingContent ?.let {
-                                Text(
-                                    text = it,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                    modifier = Modifier.padding(12.dp)
+                                MarkdownText(
+                                    markdownContent = it,
+                                    modifier = Modifier.padding(6.dp).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(0.8f)).padding(6.dp)
                                 )
+//                                Text(
+//                                    text = it,
+//                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+//                                    modifier = Modifier.padding(12.dp)
+//                                )
                             }
 
-                            Text(
-                                text = result.content,
-                                modifier = Modifier
-                                    .padding(12.dp)
+                            MarkdownText(
+                                markdownContent = result.content,
+                                modifier = Modifier.padding(12.dp)
                             )
+
+//                            Text(
+//                                text = result.content,
+//                                modifier = Modifier
+//                                    .padding(12.dp)
+//                            )
                         }
                     }
                 }
@@ -412,7 +437,6 @@ private fun RealTimeDataSelectionContent(viewModel: AiAnalysisViewModel) {
 
 /**
  * 日期范围选择组件
- * TODO 默认值改成通过数据获取
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -547,7 +571,6 @@ private fun ModelSelector(viewModel: AiAnalysisViewModel) {
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
             ) {
-                // TODO 这里的配置状态 UI 没有实时变更
                 viewModel.supportedModels.forEach { model ->
                     DropdownMenuItem(
                         text = { 
@@ -725,7 +748,7 @@ private fun HistoryUserSelector(viewModel: AiAnalysisViewModel) {
         Text("用户:", Modifier.padding(bottom = 4.dp))
         
         var userExpanded by remember { mutableStateOf(false) }
-        val selectedUser = viewModel.selectedHistoryUser
+        val selectedUser = viewModel.historyUserList[viewModel.selectedHistoryUserIndex]
         
         ExposedDropdownMenuBox(
             expanded = userExpanded,
@@ -746,11 +769,11 @@ private fun HistoryUserSelector(viewModel: AiAnalysisViewModel) {
                 expanded = userExpanded,
                 onDismissRequest = { userExpanded = false }
             ) {
-                viewModel.historyUserList.forEach { userName ->
+                viewModel.historyUserList.forEachIndexed { index, userName ->
                     DropdownMenuItem(
                         text = { Text(userName) },
                         onClick = {
-                            viewModel.onHistoryUserSelected(userName)
+                            viewModel.onHistoryUserSelected(index)
                             userExpanded = false
                         }
                     )

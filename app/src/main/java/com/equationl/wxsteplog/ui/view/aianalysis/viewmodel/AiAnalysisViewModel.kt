@@ -5,6 +5,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -61,12 +62,12 @@ class AiAnalysisViewModel @Inject constructor(
     
     // 历史数据源列表
     val logHistoryList = mutableStateListOf<StepHistoryLogStartTimeDbModel>()
-    var selectedHistoryLogTime by mutableStateOf(0L)
+    var selectedHistoryLogTime by mutableLongStateOf(0L)
         private set
     
     // 用户列表（历史数据）
     val historyUserList = mutableStateListOf<String>()
-    var selectedHistoryUser by mutableStateOf("")
+    var selectedHistoryUserIndex by mutableIntStateOf(0)
         private set
     
     // 用户列表（实时数据）
@@ -131,26 +132,32 @@ class AiAnalysisViewModel @Inject constructor(
         logHistoryList.clear()
         logHistoryList.addAll(wxStepHistoryDao.getLogStartTimeList())
 
-        if (logHistoryList.isNotEmpty()) {
-            selectedHistoryLogTime = logHistoryList.first().logStartTime
-            loadHistoryUserList()
-        }
+        selectedHistoryLogTime = logHistoryList.firstOrNull()?.logStartTime ?: 0L
+        loadHistoryUserList()
     }
     
     /**
      * 加载历史数据用户列表
      */
     private suspend fun loadHistoryUserList() {
+        selectedHistoryUserIndex = 0
         historyUserList.clear()
         historyUserList.add("全部用户") // 添加一个特殊选项表示所有用户
         historyUserList.addAll(wxStepHistoryDao.getCurrentUserList())
-        selectedHistoryUser = historyUserList.first()
 
         // 初始化日期范围
         val historyModel = logHistoryList.find { it.logStartTime == selectedHistoryLogTime }
-        historyModel?.let {
-            startDate = Date(it.startTime)
-            endDate = Date(it.endTime)
+        if (historyModel == null) {
+            // 初始化日期范围为今天和昨天
+            val calendar = Calendar.getInstance()
+            endDate = calendar.time
+
+            calendar.add(Calendar.DAY_OF_MONTH, -1)
+            startDate = calendar.time
+        }
+        else {
+            startDate = Date(historyModel.startTime)
+            endDate = Date(historyModel.endTime)
         }
     }
     
@@ -158,17 +165,25 @@ class AiAnalysisViewModel @Inject constructor(
      * 加载实时数据用户列表
      */
     private suspend fun loadRealtimeUserList() {
+        selectedRealtimeUserIndex = 0
         realtimeUserList.clear()
         realtimeUserList.add("全部用户") // 添加一个特殊选项表示所有用户
         realtimeUserList.addAll(wxStepDao.getCurrentUserList())
-        selectedRealtimeUserIndex = 0
 
-        // 初始化日期范围为今天和昨天
-        val calendar = Calendar.getInstance()
-        endDate = calendar.time
+        val timeRange = wxStepDao.getUserTimeRange()
+        if (timeRange.minTime != 0L && timeRange.maxTime != 0L) {
+            // 初始化时间范围为数据的时间范围
+            startDate = Date(timeRange.minTime)
+            endDate = Date(timeRange.maxTime)
+        }
+        else {
+            // 初始化日期范围为今天和昨天
+            val calendar = Calendar.getInstance()
+            endDate = calendar.time
 
-        calendar.add(Calendar.DAY_OF_MONTH, -1)
-        startDate = calendar.time
+            calendar.add(Calendar.DAY_OF_MONTH, -1)
+            startDate = calendar.time
+        }
     }
     
     /**
@@ -194,8 +209,8 @@ class AiAnalysisViewModel @Inject constructor(
     /**
      * 更新选中的历史数据用户
      */
-    fun onHistoryUserSelected(user: String) {
-        selectedHistoryUser = user
+    fun onHistoryUserSelected(userIndex: Int) {
+        selectedHistoryUserIndex = userIndex
     }
     
     /**
@@ -252,7 +267,7 @@ class AiAnalysisViewModel @Inject constructor(
      * 加载选中的历史数据
      */
     private suspend fun loadSelectedHistoryData(): List<WxStepHistoryTable> {
-        val userName = if (selectedHistoryUser == "全部用户") "%" else selectedHistoryUser
+        val userName = if (selectedHistoryUserIndex == 0) "%" else historyUserList[selectedHistoryUserIndex]
         
         return if (selectedHistoryLogTime > 0) {
             wxStepHistoryDao.queryRangeDataListByLogStartTime(
@@ -426,7 +441,6 @@ class AiAnalysisViewModel @Inject constructor(
                     model = selectedModel!!,
                     dataSourceType = dataSourceType
                 ).collectLatest { result ->
-                    println("这里是最终接收到的结果： $result")
                     _analysisState.value = result
 
                     if (result.status != AnalysisStatus.PROCESSING && result.status != AnalysisStatus.THINKING) {
