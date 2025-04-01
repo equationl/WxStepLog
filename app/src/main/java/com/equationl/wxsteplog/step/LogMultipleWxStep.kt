@@ -51,13 +51,24 @@ class LogMultipleWxStep : StepImpl() {
             return@next Step.get(StepTag.STEP_2, data = setting)
         }.next(StepTag.STEP_2) { step ->
             val setting = step.data as WxStepLogSetting
-            Assists.findByText("微信").forEach {
-                val screen = it.getBoundsInScreen()
-                if (screen.right < Assists.getX(1080, 270) && screen.top > Assists.getY(1920, 1850)) {
-                    OverManager.log("已打开微信主页，点击【微信】")
-                    it.findFirstParentClickable()?.click()
-                    return@next Step.get(StepTag.STEP_3, data = setting)
-                }
+            
+            // 查找底部导航栏的"微信"标签
+            val wxNodes = Assists.findByText("微信")
+            val bottomNavItems = wxNodes.filter { node ->
+                // 检查是否在屏幕底部区域
+                val bounds = node.getBoundsInScreen()
+                val isBottomArea = bounds.top > (Assists.getAppHeightInScreen() * 0.85)
+                
+                // 检查是否有父级元素可点击
+                val hasClickableParent = node.findFirstParentClickable() != null
+                
+                isBottomArea && hasClickableParent
+            }
+            
+            if (bottomNavItems.isNotEmpty()) {
+                OverManager.log("已打开微信主页，点击底部导航栏【微信】")
+                bottomNavItems.first().findFirstParentClickable()?.click()
+                return@next Step.get(StepTag.STEP_3, data = setting)
             }
 
             if (Assists.getPackageName() == Constants.wxPkgName.value) {
@@ -75,13 +86,22 @@ class LogMultipleWxStep : StepImpl() {
             return@next Step.repeat
         }.next(StepTag.STEP_3) { step ->
             val setting = step.data as WxStepLogSetting
-            val nodes = Assists.getAllNodes()
-            for (node in nodes) {
-                if (node?.text?.contains("微信运动") == true) {
-                    OverManager.log("已进入微信主页，点击【微信运动】")
-                    node.findFirstParentClickable()?.click()
-                    return@next Step.get(StepTag.STEP_4, data = setting)
-                }
+            
+            // 搜索具有"微信运动"文本的所有节点
+            val sportNodes = Assists.findByText("微信运动")
+            
+            // 检查是否在会话列表中找到微信运动
+            val validNodes = sportNodes.filter { node ->
+                // 过滤条件：确保文本完全匹配"微信运动"而不是包含
+                node.text?.toString() == "微信运动" && 
+                // 确保节点可以通过父元素点击
+                node.findFirstParentClickable() != null
+            }
+            
+            if (validNodes.isNotEmpty()) {
+                OverManager.log("已进入微信主页，点击【微信运动】")
+                validNodes.first().findFirstParentClickable()?.click()
+                return@next Step.get(StepTag.STEP_4, data = setting)
             }
 
             if (Assists.getPackageName() == Constants.wxPkgName.value) {
@@ -99,13 +119,21 @@ class LogMultipleWxStep : StepImpl() {
             return@next Step.repeat
         }.next(StepTag.STEP_4) { step ->
             val setting = step.data as WxStepLogSetting
-            Assists.findByText("步数排行榜").forEach {
-                val screen = it.getBoundsInScreen()
-                if (screen.top > Assists.getY(1920, 1800)) {
-                    OverManager.log("已进入微信主页，点击【步数排行榜】")
-                    it.findFirstParentClickable()?.click()
-                    return@next Step.get(StepTag.STEP_5, data = setting)
-                }
+            
+            // 查找"步数排行榜"相关的按钮或文本
+            val rankNodes = Assists.findByText("步数排行榜")
+            
+            // 筛选有效的排行榜节点
+            val validRankNodes = rankNodes.filter { node ->
+                // 确保文本完全匹配并且可以点击
+                node.text?.toString() == "步数排行榜" && 
+                node.findFirstParentClickable() != null
+            }
+            
+            if (validRankNodes.isNotEmpty()) {
+                OverManager.log("已进入微信运动页面，点击【步数排行榜】")
+                validRankNodes.first().findFirstParentClickable()?.click()
+                return@next Step.get(StepTag.STEP_5, data = setting)
             }
 
             if (Assists.getPackageName() == Constants.wxPkgName.value) {
@@ -316,35 +344,64 @@ class LogMultipleWxStep : StepImpl() {
             getFromDetail(nameNode, userOrder, false)
         }
 
+        // 1. 查找"步数"文本节点作为关键指示器
         val findKeyNode = nodes.find { it.text == "步数" }
         if (findKeyNode == null) {
             OverManager.log("没有找到步数关键数据，忽略本次记录")
             return false
         }
 
-        val dataList = mutableListOf<AccessibilityNodeInfo>()
+        // 2. 查找相关数字数据
+        // 先查找所有TextView类型的节点
+        val allTextViews = nodes.filter { 
+            it.className == "android.widget.TextView" && 
+            !it.text.isNullOrBlank() &&
+            it.text.toString().toIntOrNull() != null  // 只保留文本为数字的节点
+        }
+        
+        // 3. 根据相对位置查找与"步数"关联的数据
+        // 获取步数节点位置
         val keyNodeBound = findKeyNode.getBoundsInScreen()
-        for (node in nodes) {
-            val nodeBound = node.getBoundsInScreen()
-            if (abs(nodeBound.top - keyNodeBound.top) < SIMILARITY_THRESHOLD) {
-                dataList.add(node)
-            }
+        
+        // 找到"点赞"文本节点
+        val likeNode = nodes.find { it.text == "点赞" }
+        if (likeNode == null) {
+            OverManager.log("没有找到点赞关键数据，忽略本次记录")
+            return false
+        }
+        
+        // 获取步数数据节点 - 在与"步数"文本同一行且在其右侧的节点
+        val stepCountNode = allTextViews.firstOrNull { textNode ->
+            val nodeBound = textNode.getBoundsInScreen()
+            // 横向靠近，纵向在同一高度区域
+            val isHorizontallyNear = nodeBound.left > keyNodeBound.right
+            val isVerticallyAligned = abs(nodeBound.centerY() - keyNodeBound.centerY()) < (keyNodeBound.height() * 1.5)
+            
+            isHorizontallyNear && isVerticallyAligned
+        }
+        
+        // 获取点赞数据节点 - 在与"点赞"文本同一行且在其右侧的节点
+        val likeNodeBound = likeNode.getBoundsInScreen()
+        val likeCountNode = allTextViews.firstOrNull { textNode ->
+            val nodeBound = textNode.getBoundsInScreen()
+            // 横向靠近，纵向在同一高度区域
+            val isHorizontallyNear = nodeBound.left > likeNodeBound.right
+            val isVerticallyAligned = abs(nodeBound.centerY() - likeNodeBound.centerY()) < (likeNodeBound.height() * 1.5)
+            
+            isHorizontallyNear && isVerticallyAligned
         }
 
-        dataList.removeIf { it.className !=  "android.widget.TextView" || it.text.toString().toIntOrNull() == null}
-        dataList.sortBy { it.getBoundsInScreen().left }
-
-        if (dataList.size != 2) {
+        if (stepCountNode == null || likeCountNode == null) {
             OverManager.log("查找的数据不完整，忽略本次记录")
             Assists.back()
             return false
         }
 
-        OverManager.log("查找到数据，步数：${dataList[0].text}, 点赞: ${dataList[1].text}")
+        OverManager.log("查找到数据，步数：${stepCountNode.text}, 点赞: ${likeCountNode.text}")
         // save data
         DbUtil.saveData(
-            stepNum = dataList[0].text.toString().toIntOrNull(),
-            likeNum = dataList[1].text.toString().toIntOrNull(),
+            stepNum = stepCountNode.text.toString().toIntOrNull(),
+            likeNum = likeCountNode.text.toString().toIntOrNull(),
             userName = nameNode.text.toString(),
             userOrder = userOrder,
             logUserMode = LogModel.Single
