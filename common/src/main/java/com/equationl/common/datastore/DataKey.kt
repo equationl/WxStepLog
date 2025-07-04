@@ -13,4 +13,6 @@ object DataKey {
     const val RUN_STEP_INTERVAL_TIME = "RUN_STEP_INTERVAL_TIME"
     const val SHOW_DETAIL_LOG = "SHOW_DETAIL_LOG"
     const val CSV_DELIMITER = "CSV_DELIMITER"
+    const val WX_VIEW_LIMIT = "WX_VIEW_LIMIT"
+    const val STEP_ORDER_VIEW_LIMIT = "ORDER_VIEW_LIMIT"
 }

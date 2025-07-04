@@ -43,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.equationl.common.datastore.DataKey
 import com.equationl.common.datastore.DataStoreUtils
+import com.equationl.common.json.fromJson
+import com.equationl.common.json.toJson
 import com.equationl.wxsteplog.R
 import com.equationl.wxsteplog.SettingGuideActivity
 import com.equationl.wxsteplog.constants.Constants
@@ -50,6 +52,8 @@ import com.equationl.wxsteplog.constants.Route
 import com.equationl.wxsteplog.ui.LocalNavController
 import com.equationl.wxsteplog.util.Utils
 import com.ven.assists.Assists
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun HomeScreen() {
@@ -59,11 +63,15 @@ fun HomeScreen() {
     LaunchedEffect(Unit) {
         Utils.changeScreenOrientation(context, ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
 
-        Constants.wxPkgName.value = DataStoreUtils.getSyncData(DataKey.WX_PKG_NAME, Constants.wxPkgName.value)
-        Constants.wxLauncherPkg.value = DataStoreUtils.getSyncData(DataKey.WX_LAUNCHER_PKG_NAME, Constants.wxLauncherPkg.value)
-        Constants.runStepIntervalTime.intValue = DataStoreUtils.getSyncData(DataKey.RUN_STEP_INTERVAL_TIME, Constants.runStepIntervalTime.intValue)
-        Constants.showDetailLog.value = DataStoreUtils.getSyncData(DataKey.SHOW_DETAIL_LOG, Constants.showDetailLog.value)
-        Constants.csvDelimiter.value = DataStoreUtils.getSyncData(DataKey.CSV_DELIMITER, Constants.csvDelimiter.value)
+        withContext(Dispatchers.IO) {
+            Constants.wxPkgName.value = DataStoreUtils.getSyncData(DataKey.WX_PKG_NAME, Constants.wxPkgName.value)
+            Constants.wxLauncherPkg.value = DataStoreUtils.getSyncData(DataKey.WX_LAUNCHER_PKG_NAME, Constants.wxLauncherPkg.value)
+            Constants.runStepIntervalTime.intValue = DataStoreUtils.getSyncData(DataKey.RUN_STEP_INTERVAL_TIME, Constants.runStepIntervalTime.intValue)
+            Constants.showDetailLog.value = DataStoreUtils.getSyncData(DataKey.SHOW_DETAIL_LOG, Constants.showDetailLog.value)
+            Constants.csvDelimiter.value = DataStoreUtils.getSyncData(DataKey.CSV_DELIMITER, Constants.csvDelimiter.value)
+            Constants.wxViewLimit.value = DataStoreUtils.getSyncData(DataKey.WX_VIEW_LIMIT, Constants.wxViewLimit.value.toJson()).fromJson() ?: Constants.wxViewLimit.value
+            Constants.stepOrderLimit.value = DataStoreUtils.getSyncData(DataKey.STEP_ORDER_VIEW_LIMIT, Constants.stepOrderLimit.value.toJson()).fromJson() ?: Constants.stepOrderLimit.value
+        }
     }
 
     Scaffold(

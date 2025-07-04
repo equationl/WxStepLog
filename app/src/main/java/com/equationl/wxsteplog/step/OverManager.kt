@@ -90,11 +90,18 @@ object OverManager : StepListener {
                 }
                 beginStart(this)
 
+                if (setting!!.isAutoRunning) {
+                    StepManager.execute(LogMultipleWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!, delay = Constants.runStepIntervalTime.intValue.toLong())
+                }
+                else {
+                    StepManager.execute(LogMultipleWxStepByHand::class.java, StepTag.STEP_1, begin = true, data = setting!!, delay = Constants.runStepIntervalTime.intValue.toLong())
+                }
+
 //                if (setting!!.logUserMode == LogSettingMode.Multiple && setting!!.userNameList.size == 1) {
 //                    StepManager.execute(LogWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!)
 //                }
 //                else {
-                    StepManager.execute(LogMultipleWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!, delay = Constants.runStepIntervalTime.intValue.toLong())
+//                    StepManager.execute(LogMultipleWxStep::class.java, StepTag.STEP_1, begin = true, data = setting!!, delay = Constants.runStepIntervalTime.intValue.toLong())
 //                }
             }
 

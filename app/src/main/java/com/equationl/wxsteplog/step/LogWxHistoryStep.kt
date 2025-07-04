@@ -44,15 +44,23 @@ class LogWxHistoryStep : StepImpl() {
                     return@next Step.none
                 }
             }
+            OverManager.log("等待打开微信")
+            delay(2000)
             return@next Step.get(StepTag.STEP_2, data = setting)
         }.next(StepTag.STEP_2) { step ->
             val setting = step.data
-            Assists.findByText("微信").forEach {
-                val screen = it.getBoundsInScreen()
-                if (screen.right < Assists.getX(1080, 270) && screen.top > Assists.getY(1920, 1850)) {
-                    OverManager.log("已打开微信主页，点击【微信】")
-                    it.findFirstParentClickable()?.click()
-                    return@next Step.get(StepTag.STEP_3, data = setting)
+            val nodes = Assists.getAllNodes()
+            for (node in nodes) {
+                if (node?.text?.contains("微信") == true) {
+                    val screen = node.getBoundsInScreen()
+                    OverManager.log("当前【微信】的坐标为：${screen.top},${screen.right},${screen.bottom},${screen.left}")
+                    if (screen.right < Assists.getX(1080, Constants.wxViewLimit.value.right.toInt()) && screen.top > Assists.getY(1920, Constants.wxViewLimit.value.top.toInt())) {
+                        OverManager.log("已打开微信主页，点击【微信】")
+                        node.findFirstParentClickable()?.click()
+                        OverManager.log("等待返回顶部")
+                        delay(2000)
+                        return@next Step.get(StepTag.STEP_3, data = setting)
+                    }
                 }
             }
 
@@ -76,6 +84,8 @@ class LogWxHistoryStep : StepImpl() {
                 if (node?.text?.contains("微信运动") == true) {
                     OverManager.log("已进入微信主页，点击【微信运动】")
                     node.findFirstParentClickable()?.click()
+                    OverManager.log("等待打开微信运动")
+                    delay(2000)
                     return@next Step.get(StepTag.STEP_4, data = setting)
                 }
             }
@@ -349,7 +359,12 @@ class LogWxHistoryStep : StepImpl() {
     }
 
     private fun getListView(): AccessibilityNodeInfo? {
-        return Assists.findByTags("android.widget.ListView").firstOrNull()
+        var listView = Assists.findByTags("android.widget.ListView").firstOrNull()
+        if (listView == null) {
+            listView = Assists.findByTags("androidx.recyclerview.widget.RecyclerView").firstOrNull()
+        }
+
+        return listView
     }
 
 }

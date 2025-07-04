@@ -1,8 +1,5 @@
 package com.equationl.wxsteplog.step
 
-import android.content.ActivityNotFoundException
-import android.content.ComponentName
-import android.content.Intent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.db.DbUtil
@@ -25,7 +22,7 @@ import com.ven.assists.stepper.StepImpl
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 
-class LogMultipleWxStep : StepImpl() {
+class LogMultipleWxStepByHand : StepImpl() {
     companion object {
         private const val TAG = "LogMultipleWxStep"
         private const val SIMILARITY_THRESHOLD = 50
@@ -33,85 +30,12 @@ class LogMultipleWxStep : StepImpl() {
 
     override fun onImpl(collector: StepCollector) {
         collector.next(StepTag.STEP_1) { step ->
-            val setting = step.data as WxStepLogSetting
-            OverManager.log("开始运行", isForceShow = true)
-            OverManager.log("当前参数：$setting")
-            OverManager.log("启动微信")
-            Intent().apply {
-                addCategory(Intent.CATEGORY_LAUNCHER)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                component = ComponentName(Constants.wxPkgName.value, Constants.wxLauncherPkg.value)
-                try {
-                    Assists.service?.startActivity(this)
-                } catch (e: ActivityNotFoundException) {
-                    OverManager.log("无法启动【微信】，你安装微信了吗？", isForceShow = true)
-                    return@next Step.none
-                }
-            }
-            OverManager.log("等待微信启动")
-            delay(2000)
-            return@next Step.get(StepTag.STEP_2, data = setting)
-        }.next(StepTag.STEP_2) { step ->
-            val setting = step.data as WxStepLogSetting
+            OverManager.log("当前为半自动模式，请确保启动时处于微信的 “微信运动” 页面")
 
-            val nodes = Assists.getAllNodes()
-            for (node in nodes) {
-                if (node?.text?.contains("微信") == true) {
-                    val screen = node.getBoundsInScreen()
-                    OverManager.log("当前【微信】的真实坐标为：${screen.top},${screen.right},${screen.bottom},${screen.left}")
-                    OverManager.log("以1920x1080的基准坐标为：${Assists.getY(1920, screen.top)},${Assists.getX(1080, screen.right)},${Assists.getY(1920, screen.bottom)},${Assists.getX(1080, screen.left)}")
-                    if (screen.right < Assists.getX(1080, Constants.wxViewLimit.value.right.toInt()) && screen.top > Assists.getY(1920, Constants.wxViewLimit.value.top.toInt())) {
-                        OverManager.log("已打开微信主页，点击【微信】")
-                        node.findFirstParentClickable()?.click()
-                        OverManager.log("等待回到顶部")
-                        delay(2000)
-                        return@next Step.get(StepTag.STEP_3, data = setting)
-                    }
-                }
-            }
-
-            if (Assists.getPackageName() == Constants.wxPkgName.value) {
-                OverManager.log("没有查找到【微信】，但是当前已处于微信 APP 中，返回")
-                Assists.back()
-            }
-
-            if (step.repeatCount == 5) {
-                OverManager.log("已重复 5 次依旧没有找到【微信】，返回第一步", isForceShow = true)
-                return@next Step.get(StepTag.STEP_1, data = setting)
-            }
-
-            OverManager.log("没有找到【微信】，重复查找")
-            return@next Step.repeat
-        }.next(StepTag.STEP_3) { step ->
             val setting = step.data as WxStepLogSetting
             val nodes = Assists.getAllNodes()
             for (node in nodes) {
-                if (node?.text?.contains("微信运动") == true) {
-                    OverManager.log("已进入微信主页，点击【微信运动】")
-                    node.findFirstParentClickable()?.click()
-                    OverManager.log("等待打开微信运动")
-                    delay(2000)
-                    return@next Step.get(StepTag.STEP_4, data = setting)
-                }
-            }
-
-            if (Assists.getPackageName() == Constants.wxPkgName.value) {
-                OverManager.log("没有查找到【微信运动】，但是当前已处于微信 APP 中，返回")
-                Assists.back()
-            }
-
-            if (step.repeatCount == 5) {
-                OverManager.log("已重复 5 次依旧没有找到【微信运动】，返回第一步", isForceShow = true)
-                return@next Step.get(StepTag.STEP_1, data = setting)
-            }
-
-            OverManager.log("没有找到【微信运动】，重复查找")
-
-            return@next Step.repeat
-        }.next(StepTag.STEP_4) { step ->
-            val setting = step.data as WxStepLogSetting
-            val nodes = Assists.getAllNodes()
-            for (node in nodes) {
+                println("node.text = ${node?.text}")
                 if (node?.text?.contains("步数排行榜") == true) {
                     val screen = node.getBoundsInScreen()
                     OverManager.log("当前【步数排行榜】的真实坐标为：${screen.top},${screen.right},${screen.bottom},${screen.left}")
@@ -121,40 +45,41 @@ class LogMultipleWxStep : StepImpl() {
                         node.findFirstParentClickable()?.click()
                         OverManager.log("等待进入步数排行榜")
                         delay(1000)
-                        return@next Step.get(StepTag.STEP_5, data = setting)
+                        return@next Step.get(StepTag.STEP_2, data = setting)
                     }
                 }
             }
 
             if (Assists.getPackageName() == Constants.wxPkgName.value) {
-                OverManager.log("没有查找到【步数排行榜】，但是当前已处于微信 APP 中，返回")
-                Assists.back()
+                OverManager.log("没有查找到【步数排行榜】，但是当前已处于微信 APP 中")
+                // Assists.back()
             }
 
             if (step.repeatCount == 5) {
-                OverManager.log("已重复 5 次依旧没有找到【步数排行榜】，返回第一步", isForceShow = true)
-                return@next Step.get(StepTag.STEP_1, data = setting)
+                OverManager.log("已重复 5 次依旧没有找到【步数排行榜】，请确认当前是否处于微信运动主界面", isForceShow = true)
+                return@next Step.none
             }
 
             OverManager.log("没有找到【步数排行榜】，重复查找")
 
             return@next Step.repeat
-        }.next(StepTag.STEP_5) { step ->
+        }.next(StepTag.STEP_2) { step ->
             val setting = step.data as WxStepLogSetting
             val nodes = Assists.getAllNodes()
             for (node in nodes) {
                 if (node?.text?.contains("正在加载") == true) {
                     OverManager.log("正在加载中，等待……")
                     delay(Constants.runStepIntervalTime.intValue.toLong())
-                    return@next Step.get(StepTag.STEP_5, data = setting)
+                    return@next Step.get(StepTag.STEP_2, data = setting)
                 }
             }
 
             var listView = getListView()
 
             if (listView == null) {
-                OverManager.log("没有找到列表，返回第一步", isForceShow = true)
-                return@next Step.get(StepTag.STEP_1, data = setting)
+                OverManager.log("没有找到列表，重复查找", isForceShow = true)
+                delay(1000)
+                return@next Step.repeat
             }
 
             val idModel: StepListIdModel?
@@ -163,13 +88,15 @@ class LogMultipleWxStep : StepImpl() {
                 idModel = getBaseIds(listChildren)
                 OverManager.log("基准id数据为 $idModel")
                 if (idModel == null) {
-                    OverManager.log("没有找到可用基准数据，返回第一步", isForceShow = true)
-                    return@next Step.get(StepTag.STEP_1, data = setting)
+                    OverManager.log("没有找到可用基准数据，重复查找", isForceShow = true)
+                    delay(1000)
+                    return@next Step.repeat
                 }
             }
             else {
-                OverManager.log("当前运动数据列表数量不符合需求，需要 2，当前为 ${listChildren.size}，返回第一步", isForceShow = true)
-                return@next Step.get(StepTag.STEP_1, data = setting)
+                OverManager.log("当前运动数据列表数量不符合需求，需要 2，当前为 ${listChildren.size}，重复查找", isForceShow = true)
+                delay(1000)
+                return@next Step.repeat
             }
 
             val alreadyLogNameList = mutableListOf<String>()
@@ -204,7 +131,7 @@ class LogMultipleWxStep : StepImpl() {
                                 OverManager.log("间隔 $delay ms 后继续", isForceShow = true)
                                 delay(delay)
                                 OverManager.log("间隔时间到，继续记录", isForceShow = true)
-                                return@next Step.get(StepTag.STEP_4, data = setting)
+                                return@next Step.get(StepTag.STEP_1, data = setting)
                             }
 
                             if (!isNeedLogAllList) {
@@ -258,7 +185,7 @@ class LogMultipleWxStep : StepImpl() {
                     OverManager.log("间隔 $delay ms 后继续", isForceShow = true)
                     delay(delay)
                     OverManager.log("间隔时间到，继续记录", isForceShow = true)
-                    return@next Step.get(StepTag.STEP_4, data = setting)
+                    return@next Step.get(StepTag.STEP_1, data = setting)
                 }
 
                 OverManager.log("本页已记录完成，滚动到下一页")
@@ -276,7 +203,7 @@ class LogMultipleWxStep : StepImpl() {
             }
 
             OverManager.log("运行异常，返回上一步", isForceShow = true)
-            return@next Step.get(StepTag.STEP_4, data = setting)
+            return@next Step.get(StepTag.STEP_1, data = setting)
         }
     }
 

@@ -86,6 +86,7 @@ private fun ContinuousLogPage() {
     val isAllModelSpecialUser = remember { mutableStateOf(false) }
     val randomIntervalValue = remember { mutableStateOf("30000") }
     val showDaraFilterUserName = remember { mutableStateOf("") }
+    val isAutoRunning = remember { mutableStateOf(true) }
 
     LaunchedEffect(startState) {
         scope.launch {
@@ -106,7 +107,7 @@ private fun ContinuousLogPage() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        ContinuousLogSettingContent(logUserModel, userNameList, intervalTime, isRandomInterval, randomIntervalValue, showDaraFilterUserName, isAllModelSpecialUser)
+        ContinuousLogSettingContent(logUserModel, userNameList, intervalTime, isRandomInterval, randomIntervalValue, showDaraFilterUserName, isAllModelSpecialUser, isAutoRunning)
 
         OutlinedButton (
             onClick = {
@@ -148,7 +149,8 @@ private fun ContinuousLogPage() {
                                     intervalTime = intervalTime.value.toLong(),
                                     isRandomInterval = isRandomInterval.value,
                                     randomIntervalValue = randomIntervalValue.value.toLong(),
-                                    isAllModelSpecialUser = isAllModelSpecialUser.value
+                                    isAllModelSpecialUser = isAllModelSpecialUser.value,
+                                    isAutoRunning = isAutoRunning.value
                                 )
                             )
                         }

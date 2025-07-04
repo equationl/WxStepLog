@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.text.isDigitsOnly
 import com.equationl.common.datastore.DataKey
 import com.equationl.common.datastore.DataStoreUtils
+import com.equationl.common.json.fromJson
+import com.equationl.common.json.toJson
 import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.constants.Route
 import com.equationl.wxsteplog.ui.LocalNavController
@@ -57,6 +59,8 @@ fun SettingScreen() {
                 Constants.wxPkgName.value = DataStoreUtils.getSyncData(DataKey.WX_PKG_NAME, Constants.wxPkgName.value)
                 Constants.wxLauncherPkg.value = DataStoreUtils.getSyncData(DataKey.WX_LAUNCHER_PKG_NAME, Constants.wxLauncherPkg.value)
                 Constants.csvDelimiter.value = DataStoreUtils.getSyncData(DataKey.CSV_DELIMITER, Constants.csvDelimiter.value)
+                Constants.wxViewLimit.value = DataStoreUtils.getSyncData(DataKey.WX_VIEW_LIMIT, Constants.wxViewLimit.value.toJson()).fromJson() ?: Constants.wxViewLimit.value
+                Constants.stepOrderLimit.value = DataStoreUtils.getSyncData(DataKey.STEP_ORDER_VIEW_LIMIT, Constants.stepOrderLimit.value.toJson()).fromJson() ?: Constants.stepOrderLimit.value
             }
         }
 
@@ -142,6 +146,48 @@ private fun SettingContent() {
         Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedTextField(
+            value = Constants.wxViewLimit.value.top.toInt().toString(),
+            onValueChange = {
+                Constants.wxViewLimit.value = Constants.wxViewLimit.value.copy(top = it.toFloatOrNull() ?: Constants.wxViewLimit.value.top)
+            },
+            singleLine = true,
+            label = {
+                Text(text = "“微信” View 顶部坐标（高度1920为基准）")
+            },
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = Constants.wxViewLimit.value.right.toInt().toString(),
+            onValueChange = {
+                Constants.wxViewLimit.value = Constants.wxViewLimit.value.copy(right = it.toFloatOrNull() ?: Constants.wxViewLimit.value.right)
+            },
+            singleLine = true,
+            label = {
+                Text(text = "“微信” View 右部坐标（宽度1080为基准）")
+            },
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = Constants.stepOrderLimit.value.top.toInt().toString(),
+            onValueChange = {
+                Constants.stepOrderLimit.value  = Constants.stepOrderLimit.value.copy(top = it.toFloatOrNull() ?: Constants.stepOrderLimit.value.top)
+            },
+            singleLine = true,
+            label = {
+                Text(text = "“步数排行榜” View 顶部坐标（高度1920为基准）")
+            },
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
             value = Constants.csvDelimiter.value,
             onValueChange = {
                 if (it.length > 1) {
@@ -202,6 +248,8 @@ private fun TopBar() {
                 DataStoreUtils.putSyncData(DataKey.RUN_STEP_INTERVAL_TIME, Constants.runStepIntervalTime.intValue)
                 DataStoreUtils.putSyncData(DataKey.SHOW_DETAIL_LOG, Constants.showDetailLog.value)
                 DataStoreUtils.putSyncData(DataKey.CSV_DELIMITER, Constants.csvDelimiter.value)
+                DataStoreUtils.putSyncData(DataKey.WX_VIEW_LIMIT, Constants.wxViewLimit.value.toJson())
+                DataStoreUtils.putSyncData(DataKey.STEP_ORDER_VIEW_LIMIT, Constants.stepOrderLimit.value.toJson())
                 Toast.makeText(context, "已保存！", Toast.LENGTH_SHORT).show()
                 navController.popBackStack()
             }) {

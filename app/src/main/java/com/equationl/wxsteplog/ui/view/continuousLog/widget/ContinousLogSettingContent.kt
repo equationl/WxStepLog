@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Clear
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -47,6 +48,7 @@ fun ContinuousLogSettingContent(
     randomIntervalValue: MutableState<String>,
     showDaraFilterUserName: MutableState<String>,
     isAllModelSpecialUser: MutableState<Boolean>,
+    isAutoRunning: MutableState<Boolean>,
 ) {
     var isShowMoreSetting by remember { mutableStateOf(false) }
 
@@ -54,6 +56,18 @@ fun ContinuousLogSettingContent(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
+        Row {
+            Checkbox(
+                isAutoRunning.value,
+                onCheckedChange = {
+                    isAutoRunning.value = it
+                },
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+
+            Text("自动运行（不勾选该选项则需要手动打开 微信-微信运动 后再点击悬浮窗中的 “开始记录” ）")
+        }
 
         Row(
             horizontalArrangement = Arrangement.Center,
