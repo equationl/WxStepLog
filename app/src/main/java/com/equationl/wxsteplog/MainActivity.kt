@@ -8,9 +8,10 @@ import androidx.activity.enableEdgeToEdge
 import com.equationl.wxsteplog.ui.HomeNavHost
 import com.equationl.wxsteplog.ui.theme.WxStepLogTheme
 import com.equationl.wxsteplog.util.log.Logger
-import com.ven.assists.Assists
-import com.ven.assists.AssistsService
-import com.ven.assists.AssistsServiceListener
+import com.ven.assists.AssistsCore
+import com.ven.assists.service.AssistsService
+import com.ven.assists.service.AssistsServiceListener
+import com.ven.assists.utils.CoroutineWrapper
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +28,7 @@ class MainActivity : ComponentActivity(), AssistsServiceListener {
                 HomeNavHost()
             }
         }
-        Assists.serviceListeners.add(this)
+        AssistsService.listeners.add(this)
     }
 
     override fun onResume() {
@@ -55,7 +56,7 @@ class MainActivity : ComponentActivity(), AssistsServiceListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        Assists.serviceListeners.remove(this)
+        AssistsService.listeners.remove(this)
     }
 
 //    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -73,9 +74,9 @@ class MainActivity : ComponentActivity(), AssistsServiceListener {
 //    }
 
     private fun onBackApp() {
-        Assists.coroutine.launch {
-            while (Assists.getPackageName() != packageName) {
-                Assists.back()
+        CoroutineWrapper.launch {
+            while (AssistsCore.getPackageName() != packageName) {
+                AssistsCore.back()
                 delay(500)
             }
         }

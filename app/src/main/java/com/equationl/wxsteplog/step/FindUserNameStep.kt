@@ -1,18 +1,19 @@
 package com.equationl.wxsteplog.step
 
-import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.constants.Constants.wxLauncherPkg
 import com.equationl.wxsteplog.constants.Constants.wxPkgName
-import com.ven.assists.Assists
-import com.ven.assists.Assists.click
-import com.ven.assists.Assists.findFirstParentClickable
-import com.ven.assists.Assists.getBoundsInScreen
-import com.ven.assists.Assists.getChildren
-import com.ven.assists.Assists.getNodes
+import com.equationl.wxsteplog.overlays.MainOverlay
+import com.equationl.wxsteplog.util.LogWrapper
+import com.ven.assists.AssistsCore
+import com.ven.assists.AssistsCore.click
+import com.ven.assists.AssistsCore.findFirstParentClickable
+import com.ven.assists.AssistsCore.getBoundsInScreen
+import com.ven.assists.AssistsCore.getChildren
+import com.ven.assists.AssistsCore.getNodes
 import com.ven.assists.stepper.Step
 import com.ven.assists.stepper.StepCollector
 import com.ven.assists.stepper.StepImpl
@@ -27,54 +28,52 @@ class FindUserNameStep : StepImpl() {
 
     override fun onImpl(collector: StepCollector) {
         collector.next(StepTag.STEP_1) { step ->
-            OverManager.log("开始运行", isForceShow = true)
-            OverManager.log("启动微信")
+            LogWrapper.log("开始运行", isForceShow = true)
+            LogWrapper.log("启动微信")
             nameSet.clear()
             Intent().apply {
                 addCategory(Intent.CATEGORY_LAUNCHER)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 component = ComponentName(wxPkgName.value, wxLauncherPkg.value)
-                try {
-                    Assists.service?.startActivity(this)
-                } catch (e: ActivityNotFoundException) {
-                    OverManager.log("无法启动【微信】，你安装微信了吗？", isForceShow = true)
+                if (!AssistsCore.launchApp(this)) {
+                    LogWrapper.log("无法启动【微信】，你安装微信了吗？", isForceShow = true)
                     return@next Step.none
                 }
             }
             return@next Step.get(StepTag.STEP_2)
         }.next(StepTag.STEP_2) { step ->
-            Assists.findByText("通讯录").forEach {
+            AssistsCore.findByText("通讯录").forEach {
                 var screen = it.getBoundsInScreen()
-                if (screen.left > Assists.getX(1080, 340) && screen.top > Assists.getX(1920, 1850)) {
-                    OverManager.log("已打开微信主页，点击【通讯录】")
+                if (screen.left > AssistsCore.getX(1080, 340) && screen.top > AssistsCore.getX(1920, 1850)) {
+                    LogWrapper.log("已打开微信主页，点击【通讯录】")
                     it.findFirstParentClickable()?.click()
 
                     delay(1000)
 
-                    OverManager.log("再次点击【通讯录】确保回到顶部")
+                    LogWrapper.log("再次点击【通讯录】确保回到顶部")
                     it.findFirstParentClickable()?.click()
                     return@next Step.get(StepTag.STEP_3)
                 }
             }
 
-            if (Assists.getPackageName() == wxPkgName.value) {
-                OverManager.log("没有查找到【通讯录】，但是当前已处于微信 APP 中，返回")
-                Assists.back()
+            if (AssistsCore.getPackageName() == wxPkgName.value) {
+                LogWrapper.log("没有查找到【通讯录】，但是当前已处于微信 APP 中，返回")
+                AssistsCore.back()
             }
 
             if (step.repeatCount == 5) {
-                OverManager.log("已重复 5 次依旧没有找到【通讯录】，结束运行", isForceShow = true)
+                LogWrapper.log("已重复 5 次依旧没有找到【通讯录】，结束运行", isForceShow = true)
                 return@next Step.get(StepTag.STEP_4)
             }
 
-            OverManager.log("没有找到【通讯录】，重复查找")
+            LogWrapper.log("没有找到【通讯录】，重复查找")
 
             return@next Step.repeat
         }.next(StepTag.STEP_3) { step ->
             var listView = getListView()
 
             if (listView == null) {
-                OverManager.log("没有找到列表，结束运行")
+                LogWrapper.log("没有找到列表，结束运行")
                 return@next Step.get(StepTag.STEP_4)
             }
 
@@ -82,7 +81,7 @@ class FindUserNameStep : StepImpl() {
             while (true) {
                 for (item in listNodes) {
                     if (item.className == "android.widget.TextView" && !item?.text.isNullOrBlank()) {
-                        OverManager.log("找到一个好友：${item.text}")
+                        LogWrapper.log("找到一个好友：${item.text}")
                         val id = item.viewIdResourceName
                         if (nameSet[id] == null) {
                             nameSet[id] = mutableSetOf()
@@ -103,66 +102,66 @@ class FindUserNameStep : StepImpl() {
                 }
 
                 if (endFlag) {
-                    OverManager.log("已到达最后一页，总计好友 $num 个，结束查找", isForceShow = true)
+                    LogWrapper.log("已到达最后一页，总计好友 $num 个，结束查找", isForceShow = true)
                     return@next Step.get(StepTag.STEP_4, data = num)
                 }
 
-                OverManager.log("本页已记录完成，滚动到下一页")
+                LogWrapper.log("本页已记录完成，滚动到下一页")
                 listView?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
                 delay(50)
 
                 // 这里需要重新拿一下 listview 对象，不然不知道为什么 listView.getChildren() 返回的不是完整数据
                 listView = getListView()
                 if (listView == null) {
-                    OverManager.log("没有查找到数据，忽略本页")
+                    LogWrapper.log("没有查找到数据，忽略本页")
                     continue
                 }
                 listNodes = listView.getNodes()
             }
 
-            OverManager.log("运行异常，结束运行", isForceShow = true)
+            LogWrapper.log("运行异常，结束运行", isForceShow = true)
             return@next Step.get(StepTag.STEP_4)
         }.next(StepTag.STEP_4) { step ->
             // 仅保留 id 最多的数据
             val maxNameList = nameSet.maxByOrNull { it.value.size }
             val newList = maxNameList?.value
             if (newList != null) {
-                OverManager.log("实际找到 ${newList.size} 个好友", isForceShow = true)
+                LogWrapper.log("实际找到 ${newList.size} 个好友", isForceShow = true)
                 newList.addAll(Constants.allUserNameList)
                 Constants.allUserNameList.clear()
                 Constants.allUserNameList.addAll(newList)
             }
             else {
-                OverManager.log("没有找到合法数据！", isForceShow = true)
+                LogWrapper.log("没有找到合法数据！", isForceShow = true)
             }
 
-            OverManager.log("结束运行，返回 APP", isForceShow = true)
-            Assists.tasks()
+            LogWrapper.log("结束运行，返回 APP", isForceShow = true)
+            AssistsCore.recentApps()
             delay(50)
-            Assists.tasks()
+            AssistsCore.recentApps()
 
             delay(500)
 
-            OverManager.hideOverlay()
+            MainOverlay.hide()
 
             return@next Step.none
         }
     }
 
     private fun getListView(): AccessibilityNodeInfo? {
-        Assists.findByTags("android.widget.ListView").forEach {
+        AssistsCore.findByTags("android.widget.ListView").forEach {
             val screen = it.getBoundsInScreen()
-            if (screen.left >= 0 && screen.left < Assists.getX(1080, 1080) &&
-                screen.right >= Assists.getX(1080, 1080)
+            if (screen.left >= 0 && screen.left < AssistsCore.getX(1080, 1080) &&
+                screen.right >= AssistsCore.getX(1080, 1080)
             ) {
                 return it
             }
         }
 
-        Assists.findByTags("androidx.recyclerview.widget.RecyclerView").forEach {
+        AssistsCore.findByTags("androidx.recyclerview.widget.RecyclerView").forEach {
             val screen = it.getBoundsInScreen()
-            if (screen.left >= 0 && screen.left < Assists.getX(1080, 1080) &&
-                screen.right >= Assists.getX(1080, 1080)
+            if (screen.left >= 0 && screen.left < AssistsCore.getX(1080, 1080) &&
+                screen.right >= AssistsCore.getX(1080, 1080)
             ) {
                 return it
             }

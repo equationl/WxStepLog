@@ -33,7 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.equationl.wxsteplog.step.OverManager
+import com.equationl.wxsteplog.overlays.MainOverlay
 import com.equationl.wxsteplog.ui.view.statistics.state.StatisticsShowRange
 import com.equationl.wxsteplog.util.DateTimeUtil
 import com.vanpra.composematerialdialogs.MaterialDialog
@@ -226,7 +226,7 @@ fun ChooseUserNameDialog(
                 horizontalArrangement = Arrangement.End
             ) {
                 TextButton(onClick = {
-                    OverManager.showFindUser()
+                    MainOverlay.showFindUser()
                 }) {
                     Text(text = "刷新数据")
                 }

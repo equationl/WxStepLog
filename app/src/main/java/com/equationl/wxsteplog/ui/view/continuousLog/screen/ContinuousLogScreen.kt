@@ -1,6 +1,5 @@
 package com.equationl.wxsteplog.ui.view.continuousLog.screen
 
-import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -35,17 +34,16 @@ import com.equationl.common.datastore.DataKey
 import com.equationl.common.datastore.DataStoreUtils
 import com.equationl.common.json.fromJsonList
 import com.equationl.common.json.toJson
-import com.equationl.wxsteplog.SettingGuideActivity
 import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.constants.Route
 import com.equationl.wxsteplog.model.LogSettingMode
 import com.equationl.wxsteplog.model.WxStepLogSetting
 import com.equationl.wxsteplog.model.toLogUserMode
-import com.equationl.wxsteplog.step.OverManager
+import com.equationl.wxsteplog.overlays.MainOverlay
 import com.equationl.wxsteplog.ui.LocalNavController
 import com.equationl.wxsteplog.ui.view.continuousLog.widget.ContinuousLogSettingContent
 import com.equationl.wxsteplog.util.Utils
-import com.ven.assists.Assists
+import com.ven.assists.AssistsCore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -111,7 +109,7 @@ private fun ContinuousLogPage() {
 
         OutlinedButton (
             onClick = {
-                if (Assists.isAccessibilityServiceEnabled()) {
+                if (AssistsCore.isAccessibilityServiceEnabled()) {
                     if (
                         (logUserModel.value == LogSettingMode.Multiple || (logUserModel.value == LogSettingMode.All && isAllModelSpecialUser.value)) &&
                         userNameList.none { it.isNotBlank() }
@@ -142,7 +140,7 @@ private fun ContinuousLogPage() {
                         Constants.showDataFilterUserName = showDaraFilterUserName.value
 
                         withContext(Dispatchers.Main) {
-                            OverManager.show(
+                            MainOverlay.showStartLog(
                                 WxStepLogSetting(
                                     userNameList = userNameList.toList(),
                                     logUserMode = logUserModel.value,
@@ -158,8 +156,9 @@ private fun ContinuousLogPage() {
                         startState++
                     }
                 } else {
-                    Assists.openAccessibilitySetting()
-                    context.startActivity(Intent(context, SettingGuideActivity::class.java))
+                    AssistsCore.openAccessibilitySetting()
+                    // fixme 如果显示提示，设置页面会被覆盖
+                    // context.startActivity(Intent(context, SettingGuideActivity::class.java))
                 }
             }
         ) {

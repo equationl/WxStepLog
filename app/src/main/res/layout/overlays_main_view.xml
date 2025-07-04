@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical" >
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+
+            <Button
+                android:id="@+id/btn_log_wx_step"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="开始记录" />
+
+            <Button
+                android:id="@+id/btn_find_user_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="开始查找" />
+
+            <Button
+                android:id="@+id/btn_log_history"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="开始读取" />
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+    <Button
+        android:id="@+id/btn_log"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#ccc000"
+        android:text="查看日志" />
+
+</LinearLayout>

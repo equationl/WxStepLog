@@ -51,7 +51,6 @@ android {
 }
 
 dependencies {
-    implementation(project(":assists"))
     implementation(project(":aiapi"))
     implementation(project(":common"))
 
@@ -80,6 +79,7 @@ dependencies {
     implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.constraintlayout)
 
+    implementation(libs.assists.base)
     implementation(libs.gson)
     implementation(libs.hilt.android)
     implementation(libs.vico.compose)

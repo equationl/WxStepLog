@@ -23,7 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.equationl.wxsteplog.constants.Route
-import com.equationl.wxsteplog.step.OverManager
+import com.equationl.wxsteplog.overlays.MainOverlay
 import com.equationl.wxsteplog.ui.LocalNavController
 import com.equationl.wxsteplog.util.Utils
 
@@ -60,7 +60,7 @@ private fun SingleLogContent() {
     ) {
         OutlinedButton(
             onClick = {
-                OverManager.showSingleLog()
+                MainOverlay.showSingleLog()
             }
         ) {
             Text("开始读取")

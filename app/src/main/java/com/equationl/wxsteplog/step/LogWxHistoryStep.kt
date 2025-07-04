@@ -1,6 +1,5 @@
 package com.equationl.wxsteplog.step
 
-import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
 import android.util.Log
@@ -10,14 +9,15 @@ import com.equationl.wxsteplog.db.DbUtil
 import com.equationl.wxsteplog.model.LogModel
 import com.equationl.wxsteplog.model.StepListIdModel
 import com.equationl.wxsteplog.util.DateTimeUtil
-import com.ven.assists.Assists
-import com.ven.assists.Assists.click
-import com.ven.assists.Assists.findById
-import com.ven.assists.Assists.findByText
-import com.ven.assists.Assists.findFirstParentClickable
-import com.ven.assists.Assists.getBoundsInScreen
-import com.ven.assists.Assists.getChildren
-import com.ven.assists.Assists.getNodes
+import com.equationl.wxsteplog.util.LogWrapper
+import com.ven.assists.AssistsCore
+import com.ven.assists.AssistsCore.click
+import com.ven.assists.AssistsCore.findById
+import com.ven.assists.AssistsCore.findByText
+import com.ven.assists.AssistsCore.findFirstParentClickable
+import com.ven.assists.AssistsCore.getBoundsInScreen
+import com.ven.assists.AssistsCore.getChildren
+import com.ven.assists.AssistsCore.getNodes
 import com.ven.assists.stepper.Step
 import com.ven.assists.stepper.StepCollector
 import com.ven.assists.stepper.StepImpl
@@ -29,78 +29,76 @@ class LogWxHistoryStep : StepImpl() {
     override fun onImpl(collector: StepCollector) {
         collector.next(StepTag.STEP_1) { step ->
             val setting = step.data
-            OverManager.log("开始运行", isForceShow = true)
-            OverManager.log("当前参数：$setting")
-            OverManager.log("启动微信")
+            LogWrapper.log("开始运行", isForceShow = true)
+            LogWrapper.log("当前参数：$setting")
+            LogWrapper.log("启动微信")
             alreadyLogDate.clear()
             Intent().apply {
                 addCategory(Intent.CATEGORY_LAUNCHER)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 component = ComponentName(Constants.wxPkgName.value, Constants.wxLauncherPkg.value)
-                try {
-                    Assists.service?.startActivity(this)
-                } catch (e: ActivityNotFoundException) {
-                    OverManager.log("无法启动【微信】，你安装微信了吗？", isForceShow = true)
+                if (!AssistsCore.launchApp(this)) {
+                    LogWrapper.log("无法启动【微信】，你安装微信了吗？", isForceShow = true)
                     return@next Step.none
                 }
             }
-            OverManager.log("等待打开微信")
+            LogWrapper.log("等待打开微信")
             delay(2000)
             return@next Step.get(StepTag.STEP_2, data = setting)
         }.next(StepTag.STEP_2) { step ->
             val setting = step.data
-            val nodes = Assists.getAllNodes()
+            val nodes = AssistsCore.getAllNodes()
             for (node in nodes) {
                 if (node?.text?.contains("微信") == true) {
                     val screen = node.getBoundsInScreen()
-                    OverManager.log("当前【微信】的坐标为：${screen.top},${screen.right},${screen.bottom},${screen.left}")
-                    if (screen.right < Assists.getX(1080, Constants.wxViewLimit.value.right.toInt()) && screen.top > Assists.getY(1920, Constants.wxViewLimit.value.top.toInt())) {
-                        OverManager.log("已打开微信主页，点击【微信】")
+                    LogWrapper.log("当前【微信】的坐标为：${screen.top},${screen.right},${screen.bottom},${screen.left}")
+                    if (screen.right < AssistsCore.getX(1080, Constants.wxViewLimit.value.right.toInt()) && screen.top > AssistsCore.getY(1920, Constants.wxViewLimit.value.top.toInt())) {
+                        LogWrapper.log("已打开微信主页，点击【微信】")
                         node.findFirstParentClickable()?.click()
-                        OverManager.log("等待返回顶部")
+                        LogWrapper.log("等待返回顶部")
                         delay(2000)
                         return@next Step.get(StepTag.STEP_3, data = setting)
                     }
                 }
             }
 
-            if (Assists.getPackageName() == Constants.wxPkgName.value) {
-                OverManager.log("没有查找到【微信】，但是当前已处于微信 APP 中，返回")
-                Assists.back()
+            if (AssistsCore.getPackageName() == Constants.wxPkgName.value) {
+                LogWrapper.log("没有查找到【微信】，但是当前已处于微信 APP 中，返回")
+                AssistsCore.back()
             }
 
             if (step.repeatCount == 5) {
-                OverManager.log("已重复 5 次依旧没有找到【微信】，返回第一步", isForceShow = true)
+                LogWrapper.log("已重复 5 次依旧没有找到【微信】，返回第一步", isForceShow = true)
                 return@next Step.get(StepTag.STEP_1, data = setting)
             }
 
-            OverManager.log("没有找到【微信】，重复查找")
+            LogWrapper.log("没有找到【微信】，重复查找")
 
             return@next Step.repeat
         }.next(StepTag.STEP_3) { step ->
             val setting = step.data
-            val nodes = Assists.getAllNodes()
+            val nodes = AssistsCore.getAllNodes()
             for (node in nodes) {
                 if (node?.text?.contains("微信运动") == true) {
-                    OverManager.log("已进入微信主页，点击【微信运动】")
+                    LogWrapper.log("已进入微信主页，点击【微信运动】")
                     node.findFirstParentClickable()?.click()
-                    OverManager.log("等待打开微信运动")
+                    LogWrapper.log("等待打开微信运动")
                     delay(2000)
                     return@next Step.get(StepTag.STEP_4, data = setting)
                 }
             }
 
-            if (Assists.getPackageName() == Constants.wxPkgName.value) {
-                OverManager.log("没有查找到【微信运动】，但是当前已处于微信 APP 中，返回")
-                Assists.back()
+            if (AssistsCore.getPackageName() == Constants.wxPkgName.value) {
+                LogWrapper.log("没有查找到【微信运动】，但是当前已处于微信 APP 中，返回")
+                AssistsCore.back()
             }
 
             if (step.repeatCount == 5) {
-                OverManager.log("已重复 5 次依旧没有找到【微信运动】，返回第一步", isForceShow = true)
+                LogWrapper.log("已重复 5 次依旧没有找到【微信运动】，返回第一步", isForceShow = true)
                 return@next Step.get(StepTag.STEP_1, data = setting)
             }
 
-            OverManager.log("没有找到【微信运动】，重复查找")
+            LogWrapper.log("没有找到【微信运动】，重复查找")
 
             return@next Step.repeat
         }.next(StepTag.STEP_4) { step ->
@@ -108,7 +106,7 @@ class LogWxHistoryStep : StepImpl() {
             var listView = getRecyclerView()
 
             if (listView == null) {
-                OverManager.log("没有找到列表，返回第一步", isForceShow = true)
+                LogWrapper.log("没有找到列表，返回第一步", isForceShow = true)
                 return@next Step.get(StepTag.STEP_1, data = setting)
             }
 
@@ -116,7 +114,7 @@ class LogWxHistoryStep : StepImpl() {
 
             while (true) {
                 if (runningErrorCount > 5) {
-                    OverManager.log("累计错误达 $runningErrorCount 次，跳出循环读取", isForceShow = true)
+                    LogWrapper.log("累计错误达 $runningErrorCount 次，跳出循环读取", isForceShow = true)
                     break
                 }
 
@@ -133,17 +131,17 @@ class LogWxHistoryStep : StepImpl() {
                         val dateTime =  try {
                             DateTimeUtil.getTimeFromMsgListHeader(dateTimeText)
                         } catch (tr: Throwable) {
-                            OverManager.log("$dateTimeText 无法解析，跳过本次循环")
+                            LogWrapper.log("$dateTimeText 无法解析，跳过本次循环")
                             continue
                         }
                         if (alreadyLogDate.contains(dateTime)) {
-                            OverManager.log("$dateTimeText 已记录，跳过")
+                            LogWrapper.log("$dateTimeText 已记录，跳过")
                         }
                         else {
                             val clickAbleItem = cardSubItemList[1]!!.getNodes().first { it.isClickable }
                             clickAbleItem.click()
                             delay(Constants.runStepIntervalTime.intValue.toLong())
-                            OverManager.log("开始记录 $dateTimeText 的数据")
+                            LogWrapper.log("开始记录 $dateTimeText 的数据")
                             val result = getDetailData(dateTime)
                             if (!result) {
                                 isMsgExpired = true
@@ -152,7 +150,7 @@ class LogWxHistoryStep : StepImpl() {
                         }
                     }
                     else {
-                        OverManager.log("当前卡片内容不符合，跳过")
+                        LogWrapper.log("当前卡片内容不符合，跳过")
                     }
                 }
 
@@ -160,11 +158,11 @@ class LogWxHistoryStep : StepImpl() {
                     return@next Step.none
                 }
 
-                OverManager.log("本页已记录完成，滚动到上一页")
+                LogWrapper.log("本页已记录完成，滚动到上一页")
                 val endFlag = !(listView?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD) ?: false)
 
                 if (endFlag) {
-                    OverManager.log("已到达最后一页，程序结束，请关闭本窗口后自行返回 APP", isForceShow = true)
+                    LogWrapper.log("已到达最后一页，程序结束，请关闭本窗口后自行返回 APP", isForceShow = true)
                     return@next Step.none
                 }
 
@@ -172,12 +170,12 @@ class LogWxHistoryStep : StepImpl() {
                 listView = getRecyclerView()
                 if (listView == null) {
                     runningErrorCount++
-                    OverManager.log("没有查找到数据，忽略本页")
+                    LogWrapper.log("没有查找到数据，忽略本页")
                     continue
                 }
             }
 
-            OverManager.log("运行异常，返回上一步")
+            LogWrapper.log("运行异常，返回上一步")
             return@next Step.get(StepTag.STEP_3, data = setting)
         }
     }
@@ -186,10 +184,10 @@ class LogWxHistoryStep : StepImpl() {
      * @return false 消息已过期，true 其他原因返回
      * */
     private suspend fun getDetailData(dateTime: Long): Boolean {
-        val nodes = Assists.getAllNodes()
+        val nodes = AssistsCore.getAllNodes()
         for (node in nodes) {
             if (node?.text?.contains("正在加载") == true) {
-                OverManager.log("正在加载中，等待……")
+                LogWrapper.log("正在加载中，等待……")
                 delay(Constants.runStepIntervalTime.intValue.toLong())
                 return getDetailData(dateTime)
             }
@@ -197,7 +195,7 @@ class LogWxHistoryStep : StepImpl() {
 
         for (node in nodes) {
             if (node?.text?.contains("消息已过期") == true) {
-                OverManager.log("消息已过期，结束运行，请关闭本窗口后自行返回 APP", isForceShow = true)
+                LogWrapper.log("消息已过期，结束运行，请关闭本窗口后自行返回 APP", isForceShow = true)
                 return false
             }
         }
@@ -205,8 +203,8 @@ class LogWxHistoryStep : StepImpl() {
         var listView = getListView()
 
         if (listView == null) {
-            OverManager.log("没有找到列表，返回")
-            Assists.back()
+            LogWrapper.log("没有找到列表，返回")
+            AssistsCore.back()
             return true
         }
 
@@ -214,16 +212,16 @@ class LogWxHistoryStep : StepImpl() {
         var listChildren = listView.getChildren()
         if (listChildren.size >= 2) {
             idModel = getBaseIds(listChildren)
-            OverManager.log("基准id数据为 $idModel")
+            LogWrapper.log("基准id数据为 $idModel")
             if (idModel == null) {
-                OverManager.log("没有找到可用基准数据，返回")
-                Assists.back()
+                LogWrapper.log("没有找到可用基准数据，返回")
+                AssistsCore.back()
                 return true
             }
         }
         else {
-            OverManager.log("当前运动数据列表数量不符合需求，需要 2，当前为 ${listChildren.size}，返回")
-            Assists.back()
+            LogWrapper.log("当前运动数据列表数量不符合需求，需要 2，当前为 ${listChildren.size}，返回")
+            AssistsCore.back()
             return true
         }
 
@@ -232,7 +230,7 @@ class LogWxHistoryStep : StepImpl() {
 
         while (true) {
             if (runningErrorCount > 5) {
-                OverManager.log("累计错误达 $runningErrorCount 次，跳出循环读取", isForceShow = true)
+                LogWrapper.log("累计错误达 $runningErrorCount 次，跳出循环读取", isForceShow = true)
                 break
             }
 
@@ -244,12 +242,12 @@ class LogWxHistoryStep : StepImpl() {
                     val stepText = item.findById(idModel.itemStepId).firstOrNull()?.text
                     val likeText = item.findById(idModel.itemLikeId).firstOrNull()?.text
 
-                    OverManager.log("查找到数据，排名：$orderText, 名称：$nameText, 步数：$stepText, 点赞: $likeText")
+                    LogWrapper.log("查找到数据，排名：$orderText, 名称：$nameText, 步数：$stepText, 点赞: $likeText")
 
                     if (!orderText.isNullOrBlank() && !nameText.isNullOrBlank() && !stepText.isNullOrBlank() && !likeText.isNullOrBlank()) {
 
                         if (alreadyLogNameList.contains(nameText.toString())) {
-                            OverManager.log("当前用户 $nameText 已记录过，忽略本次记录")
+                            LogWrapper.log("当前用户 $nameText 已记录过，忽略本次记录")
                             continue
                         }
 
@@ -266,24 +264,24 @@ class LogWxHistoryStep : StepImpl() {
                         alreadyLogNameList.add(nameText.toString())
                     }
                     else {
-                        OverManager.log("数据不完整，忽略本次记录")
+                        LogWrapper.log("数据不完整，忽略本次记录")
                     }
                 }
                 else {
                     runningErrorCount++
-                    OverManager.log("未查找到列表项数据，忽略本次记录")
+                    LogWrapper.log("未查找到列表项数据，忽略本次记录")
                 }
             }
 
             val endFlag = listView.findByText("邀请朋友").isNotEmpty()
             if (endFlag) {
                 alreadyLogDate.add(dateTime)
-                OverManager.log("已到达最后一页，返回")
-                Assists.back()
+                LogWrapper.log("已到达最后一页，返回")
+                AssistsCore.back()
                 return true
             }
 
-            OverManager.log("本页已记录完成，滚动到下一页")
+            LogWrapper.log("本页已记录完成，滚动到下一页")
             listView?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
             delay(Constants.runStepIntervalTime.intValue.toLong())
 
@@ -291,14 +289,14 @@ class LogWxHistoryStep : StepImpl() {
             listView = getListView()
             if (listView == null) {
                 runningErrorCount++
-                OverManager.log("没有查找到数据，忽略本页")
+                LogWrapper.log("没有查找到数据，忽略本页")
                 continue
             }
             listChildren = listView.getChildren()
         }
 
-        OverManager.log("运行异常，返回", isForceShow = true)
-        Assists.back()
+        LogWrapper.log("运行异常，返回", isForceShow = true)
+        AssistsCore.back()
         return true
     }
 
@@ -306,7 +304,7 @@ class LogWxHistoryStep : StepImpl() {
         // 基准 item 用于确定 view 的 id
         for (baseItem in list) {
             if (baseItem == null) {
-                OverManager.log("baseItem is null")
+                LogWrapper.log("baseItem is null")
                 continue
             }
             val textNode = mutableListOf<AccessibilityNodeInfo>()
@@ -317,7 +315,7 @@ class LogWxHistoryStep : StepImpl() {
             }
 
             if (textNode.size != 4) {
-                OverManager.log("基准数据查找失败，需要数量 4， 当前为 ${textNode.size}")
+                LogWrapper.log("基准数据查找失败，需要数量 4， 当前为 ${textNode.size}")
                 continue
             }
 
@@ -332,12 +330,12 @@ class LogWxHistoryStep : StepImpl() {
             )
         }
 
-        OverManager.log("遍历完毕当前数据后依旧没有找到基准数据")
+        LogWrapper.log("遍历完毕当前数据后依旧没有找到基准数据")
         return null
     }
 
     private fun getRecyclerView(): AccessibilityNodeInfo? {
-        val listViewList = Assists.findByTags("androidx.recyclerview.widget.RecyclerView")
+        val listViewList = AssistsCore.findByTags("androidx.recyclerview.widget.RecyclerView")
         var listView: AccessibilityNodeInfo? = null
         if (listViewList.size == 1) {
             listView = listViewList.firstOrNull()
@@ -359,9 +357,9 @@ class LogWxHistoryStep : StepImpl() {
     }
 
     private fun getListView(): AccessibilityNodeInfo? {
-        var listView = Assists.findByTags("android.widget.ListView").firstOrNull()
+        var listView = AssistsCore.findByTags("android.widget.ListView").firstOrNull()
         if (listView == null) {
-            listView = Assists.findByTags("androidx.recyclerview.widget.RecyclerView").firstOrNull()
+            listView = AssistsCore.findByTags("androidx.recyclerview.widget.RecyclerView").firstOrNull()
         }
 
         return listView

@@ -23,23 +23,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.ven.assists.Assists
-import kotlinx.coroutines.Dispatchers
+import com.ven.assists.utils.CoroutineWrapper
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class SettingGuideActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        Assists.coroutine.launch {
+        CoroutineWrapper.launch(isMain = true) {
             delay(500)
-            withContext(Dispatchers.Main) {
-                setContent {
-                    SettingGuidePage {
-                        finish()
-                    }
+            setContent {
+                SettingGuidePage {
+                    finish()
                 }
             }
         }

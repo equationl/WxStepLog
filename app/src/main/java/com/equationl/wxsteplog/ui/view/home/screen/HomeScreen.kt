@@ -46,12 +46,11 @@ import com.equationl.common.datastore.DataStoreUtils
 import com.equationl.common.json.fromJson
 import com.equationl.common.json.toJson
 import com.equationl.wxsteplog.R
-import com.equationl.wxsteplog.SettingGuideActivity
 import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.constants.Route
 import com.equationl.wxsteplog.ui.LocalNavController
 import com.equationl.wxsteplog.util.Utils
-import com.ven.assists.Assists
+import com.ven.assists.AssistsCore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -93,7 +92,7 @@ fun HomeScreen() {
 @Composable
 private fun HomePage(isAccessibilityServiceEnabled: MutableState<Boolean>) {
     LifecycleResumeEffect(Unit) {
-        isAccessibilityServiceEnabled.value = Assists.isAccessibilityServiceEnabled()
+        isAccessibilityServiceEnabled.value = AssistsCore.isAccessibilityServiceEnabled()
 
         onPauseOrDispose  {
 
@@ -147,8 +146,9 @@ private fun OpenAccessibilityServiceContent() {
         Spacer(Modifier.height(8.dp))
         OutlinedButton(
             onClick = {
-                Assists.openAccessibilitySetting()
-                context.startActivity(Intent(context, SettingGuideActivity::class.java))
+                AssistsCore.openAccessibilitySetting()
+                // fixme 如果显示提示，设置页面会被覆盖
+                // context.startActivity(Intent(context, SettingGuideActivity::class.java))
             }
         ) {
             Text("打开无障碍服务")
