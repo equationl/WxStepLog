@@ -2,18 +2,20 @@ package com.equationl.wxsteplog.step
 
 import android.content.ComponentName
 import android.content.Intent
-import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.db.DbUtil
 import com.equationl.wxsteplog.model.LogModel
 import com.equationl.wxsteplog.model.StepListIdModel
+import com.equationl.wxsteplog.util.AccessibilityUtil
+import com.equationl.wxsteplog.util.AccessibilityUtil.getLikeTextFromOrder
+import com.equationl.wxsteplog.util.AccessibilityUtil.includeByContainsText
+import com.equationl.wxsteplog.util.AccessibilityUtil.includeByMathText
 import com.equationl.wxsteplog.util.DateTimeUtil
 import com.equationl.wxsteplog.util.LogWrapper
 import com.ven.assists.AssistsCore
 import com.ven.assists.AssistsCore.click
 import com.ven.assists.AssistsCore.findById
-import com.ven.assists.AssistsCore.findByText
 import com.ven.assists.AssistsCore.findFirstParentClickable
 import com.ven.assists.AssistsCore.getBoundsInScreen
 import com.ven.assists.AssistsCore.getChildren
@@ -43,7 +45,7 @@ class LogWxHistoryStep : StepImpl() {
                 }
             }
             LogWrapper.log("等待打开微信")
-            delay(2000)
+            delay(1000)
             return@next Step.get(StepTag.STEP_2, data = setting)
         }.next(StepTag.STEP_2) { step ->
             val setting = step.data
@@ -56,7 +58,7 @@ class LogWxHistoryStep : StepImpl() {
                         LogWrapper.log("已打开微信主页，点击【微信】")
                         node.findFirstParentClickable()?.click()
                         LogWrapper.log("等待返回顶部")
-                        delay(2000)
+                        delay(1000)
                         return@next Step.get(StepTag.STEP_3, data = setting)
                     }
                 }
@@ -83,7 +85,7 @@ class LogWxHistoryStep : StepImpl() {
                     LogWrapper.log("已进入微信主页，点击【微信运动】")
                     node.findFirstParentClickable()?.click()
                     LogWrapper.log("等待打开微信运动")
-                    delay(2000)
+                    delay(1000)
                     return@next Step.get(StepTag.STEP_4, data = setting)
                 }
             }
@@ -124,10 +126,8 @@ class LogWxHistoryStep : StepImpl() {
 
                 for (cardParent in listViewChildren ?: listOf()) {
                     val cardSubItemList = cardParent?.getChildren()
-                    // 这种判断方式不对，如果有点赞消息的话也会判断成卡片（不过其实从点赞消息点进去也没有问题）
-                    Log.i("el", "onImpl: className = ${cardSubItemList?.firstOrNull()?.className }, size = ${cardSubItemList?.size}")
-                    if (cardSubItemList?.firstOrNull()?.className == "android.widget.TextView" && cardSubItemList.size >= 2) {
-                        val dateTimeText = cardSubItemList.first()!!.text.toString()
+                    if (isLegalHistoryCard(cardSubItemList)) {
+                        val dateTimeText = cardSubItemList!!.first()!!.text.toString()
                         val dateTime =  try {
                             DateTimeUtil.getTimeFromMsgListHeader(dateTimeText)
                         } catch (tr: Throwable) {
@@ -159,7 +159,8 @@ class LogWxHistoryStep : StepImpl() {
                 }
 
                 LogWrapper.log("本页已记录完成，滚动到上一页")
-                val endFlag = !(listView?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD) ?: false)
+                // TODO 如果只有一页时会始终认为滚动成功，导致无法判断是否滚动完成
+                val endFlag = listView?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD) != true
 
                 if (endFlag) {
                     LogWrapper.log("已到达最后一页，程序结束，请关闭本窗口后自行返回 APP", isForceShow = true)
@@ -240,7 +241,7 @@ class LogWxHistoryStep : StepImpl() {
                     val nameNode = item.findById(idModel.itemNameId).firstOrNull()
                     val nameText = nameNode?.text
                     val stepText = item.findById(idModel.itemStepId).firstOrNull()?.text
-                    val likeText = item.findById(idModel.itemLikeId).firstOrNull()?.text
+                    val likeText = item.getLikeTextFromOrder(idModel)
 
                     LogWrapper.log("查找到数据，排名：$orderText, 名称：$nameText, 步数：$stepText, 点赞: $likeText")
 
@@ -273,7 +274,7 @@ class LogWxHistoryStep : StepImpl() {
                 }
             }
 
-            val endFlag = listView.findByText("邀请朋友").isNotEmpty()
+            val endFlag = listView.includeByMathText("邀请朋友")
             if (endFlag) {
                 alreadyLogDate.add(dateTime)
                 LogWrapper.log("已到达最后一页，返回")
@@ -301,37 +302,7 @@ class LogWxHistoryStep : StepImpl() {
     }
 
     private fun getBaseIds(list: List<AccessibilityNodeInfo?>): StepListIdModel? {
-        // 基准 item 用于确定 view 的 id
-        for (baseItem in list) {
-            if (baseItem == null) {
-                LogWrapper.log("baseItem is null")
-                continue
-            }
-            val textNode = mutableListOf<AccessibilityNodeInfo>()
-            for (node in baseItem.getNodes()) {
-                if (!node.text.isNullOrBlank()) {
-                    textNode.add(node)
-                }
-            }
-
-            if (textNode.size != 4) {
-                LogWrapper.log("基准数据查找失败，需要数量 4， 当前为 ${textNode.size}")
-                continue
-            }
-
-            // 按照左到右顺序排序
-            textNode.sortBy { it.getBoundsInScreen().left }
-            return StepListIdModel(
-                itemParentId = baseItem.viewIdResourceName,
-                itemOrderId = textNode[0].viewIdResourceName,
-                itemNameId = textNode[1].viewIdResourceName,
-                itemStepId = textNode[2].viewIdResourceName,
-                itemLikeId = textNode[3].viewIdResourceName,
-            )
-        }
-
-        LogWrapper.log("遍历完毕当前数据后依旧没有找到基准数据")
-        return null
+        return AccessibilityUtil.getSportOrderListBaseId(list)
     }
 
     private fun getRecyclerView(): AccessibilityNodeInfo? {
@@ -357,12 +328,15 @@ class LogWxHistoryStep : StepImpl() {
     }
 
     private fun getListView(): AccessibilityNodeInfo? {
-        var listView = AssistsCore.findByTags("android.widget.ListView").firstOrNull()
-        if (listView == null) {
-            listView = AssistsCore.findByTags("androidx.recyclerview.widget.RecyclerView").firstOrNull()
-        }
+        return AccessibilityUtil.getListView()
+    }
 
-        return listView
+    // TODO 这里判断条件没有考虑其他消息内容，例如点赞消息（虽然从点赞消息点进去内容记录也可以）
+    private fun isLegalHistoryCard(cardSubItemList: ArrayList<AccessibilityNodeInfo>?): Boolean {
+        return cardSubItemList?.firstOrNull()?.className == "android.widget.TextView"
+                && cardSubItemList.size >= 2
+                // 忽略初始卡片
+                && !cardSubItemList[1].includeByContainsText("这一次，与你分享运动的快乐") && !cardSubItemList[1].includeByContainsText("嘿，新朋友快进来")
     }
 
 }

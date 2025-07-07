@@ -1,6 +1,6 @@
 [versions]
 agp = "8.7.1"
-assistsBase = "v3.2.17"
+assistsBase = "22f4a29feb"
 baserecyclerviewadapterhelper = "3.0.7"
 constraintlayout = "2.2.0"
 converterGson = "2.9.0"
@@ -33,7 +33,7 @@ material = "1.12.0"
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
-assists-base = { module = "com.github.ven-coder.Assists:assists-base", version.ref = "assistsBase" }
+assists-base = { module = "com.github.equationl.Assists:assists-base", version.ref = "assistsBase" }
 baserecyclerviewadapterhelper = { module = "com.github.CymChad:BaseRecyclerViewAdapterHelper", version.ref = "baserecyclerviewadapterhelper" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
 html = { module = "io.noties.markwon:html", version.ref = "markwon" }

@@ -79,6 +79,7 @@ dependencies {
     implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.constraintlayout)
 
+    // FIXME 这个版本有 repeat BUG，已经提了 PR，但是还没合并，所以暂时用我自己 fork 的
     implementation(libs.assists.base)
     implementation(libs.gson)
     implementation(libs.hilt.android)

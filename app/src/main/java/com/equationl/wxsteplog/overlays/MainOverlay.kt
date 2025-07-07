@@ -17,6 +17,7 @@ import com.equationl.wxsteplog.util.LogWrapper
 import com.equationl.wxsteplog.util.log.LogUtil
 import com.ven.assists.service.AssistsService
 import com.ven.assists.service.AssistsServiceListener
+import com.ven.assists.stepper.StepListener
 import com.ven.assists.stepper.StepManager
 import com.ven.assists.window.AssistsWindowManager
 import com.ven.assists.window.AssistsWindowWrapper
@@ -66,16 +67,20 @@ object MainOverlay: AssistsServiceListener {
                         minWidth = (ScreenUtils.getScreenWidth() * 0.6).toInt()
                         minHeight = (ScreenUtils.getScreenHeight() * 0.4).toInt()
                         initialCenter = true
-//                        viewBinding.tvTitle.text = when(showType) {
-//                            ShowType.LOG -> "记录数据"
-//                            ShowType.FIND_USER -> "查找用户名"
-//                            ShowType.SINGLE_LOG -> "读取数据"
-//                        }
                     }
                 }
             }
             return field
         }
+
+    private val stepListener by lazy {
+        object : StepListener {
+            override fun onStepCatch(e: Throwable) {
+                super.onStepCatch(e)
+                LogWrapper.logAppend("程序已停止：${e.message ?: "未知错误"}", isForceShow = true)
+            }
+        }
+    }
 
     fun showStartLog(setting: WxStepLogSetting) {
         showType = ShowType.LOG
@@ -137,6 +142,8 @@ object MainOverlay: AssistsServiceListener {
     }
 
     private fun initView() {
+        StepManager.stepListeners = stepListener
+
         viewBinding?.apply {
 
             when (showType) {

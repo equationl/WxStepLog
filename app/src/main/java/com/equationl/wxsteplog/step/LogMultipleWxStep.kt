@@ -9,16 +9,17 @@ import com.equationl.wxsteplog.model.LogModel
 import com.equationl.wxsteplog.model.LogSettingMode
 import com.equationl.wxsteplog.model.StepListIdModel
 import com.equationl.wxsteplog.model.WxStepLogSetting
+import com.equationl.wxsteplog.util.AccessibilityUtil
+import com.equationl.wxsteplog.util.AccessibilityUtil.getLikeTextFromOrder
+import com.equationl.wxsteplog.util.AccessibilityUtil.includeByMathText
 import com.equationl.wxsteplog.util.LogWrapper
 import com.equationl.wxsteplog.util.Utils
 import com.ven.assists.AssistsCore
 import com.ven.assists.AssistsCore.click
 import com.ven.assists.AssistsCore.findById
-import com.ven.assists.AssistsCore.findByText
 import com.ven.assists.AssistsCore.findFirstParentClickable
 import com.ven.assists.AssistsCore.getBoundsInScreen
 import com.ven.assists.AssistsCore.getChildren
-import com.ven.assists.AssistsCore.getNodes
 import com.ven.assists.stepper.Step
 import com.ven.assists.stepper.StepCollector
 import com.ven.assists.stepper.StepImpl
@@ -47,7 +48,7 @@ class LogMultipleWxStep : StepImpl() {
                 }
             }
             LogWrapper.log("等待微信启动")
-            delay(2000)
+            delay(1000)
             return@next Step.get(StepTag.STEP_2, data = setting)
         }.next(StepTag.STEP_2) { step ->
             val setting = step.data as WxStepLogSetting
@@ -62,7 +63,7 @@ class LogMultipleWxStep : StepImpl() {
                         LogWrapper.log("已打开微信主页，点击【微信】")
                         node.findFirstParentClickable()?.click()
                         LogWrapper.log("等待回到顶部")
-                        delay(2000)
+                        delay(1000)
                         return@next Step.get(StepTag.STEP_3, data = setting)
                     }
                 }
@@ -88,7 +89,7 @@ class LogMultipleWxStep : StepImpl() {
                     LogWrapper.log("已进入微信主页，点击【微信运动】")
                     node.findFirstParentClickable()?.click()
                     LogWrapper.log("等待打开微信运动")
-                    delay(2000)
+                    delay(1000)
                     return@next Step.get(StepTag.STEP_4, data = setting)
                 }
             }
@@ -190,7 +191,7 @@ class LogMultipleWxStep : StepImpl() {
                         val nameNode = item.findById(idModel.itemNameId).firstOrNull()
                         val nameText = nameNode?.text
                         val stepText = item.findById(idModel.itemStepId).firstOrNull()?.text
-                        val likeText = item.findById(idModel.itemLikeId).firstOrNull()?.text
+                        val likeText = item.getLikeTextFromOrder(idModel)
 
                         LogWrapper.log("查找到数据，排名：$orderText, 名称：$nameText, 步数：$stepText, 点赞: $likeText")
 
@@ -248,7 +249,7 @@ class LogMultipleWxStep : StepImpl() {
                     }
                 }
 
-                val endFlag = listView.findByText("邀请朋友").isNotEmpty()
+                val endFlag = listView.includeByMathText("邀请朋友")
                 if (endFlag) {
                     LogWrapper.log("已到达最后一页，返回", isForceShow = true)
                     AssistsCore.back()
@@ -279,46 +280,11 @@ class LogMultipleWxStep : StepImpl() {
     }
 
     private fun getBaseIds(list: List<AccessibilityNodeInfo?>): StepListIdModel? {
-        // 基准 item 用于确定 view 的 id
-        for (baseItem in list) {
-            if (baseItem == null) {
-                LogWrapper.log("baseItem is null")
-                continue
-            }
-            val textNode = mutableListOf<AccessibilityNodeInfo>()
-            for (node in baseItem.getNodes()) {
-                if (!node.text.isNullOrBlank()) {
-                    textNode.add(node)
-                }
-            }
-
-            if (textNode.size != 4) {
-                LogWrapper.log("基准数据查找失败，需要数量 4， 当前为 ${textNode.size}")
-                continue
-            }
-
-            // 按照左到右顺序排序
-            textNode.sortBy { it.getBoundsInScreen().left }
-            return StepListIdModel(
-                itemParentId = baseItem.viewIdResourceName,
-                itemOrderId = textNode[0].viewIdResourceName,
-                itemNameId = textNode[1].viewIdResourceName,
-                itemStepId = textNode[2].viewIdResourceName,
-                itemLikeId = textNode[3].viewIdResourceName,
-            )
-        }
-
-        LogWrapper.log("遍历完毕当前数据后依旧没有找到基准数据", isForceShow = true)
-        return null
+        return AccessibilityUtil.getSportOrderListBaseId(list)
     }
 
     private fun getListView(): AccessibilityNodeInfo? {
-        var listView = AssistsCore.findByTags("android.widget.ListView").firstOrNull()
-        if (listView == null) {
-            listView = AssistsCore.findByTags("androidx.recyclerview.widget.RecyclerView").firstOrNull()
-        }
-
-        return listView
+        return AccessibilityUtil.getListView()
     }
 
     private suspend fun getFromDetail(nameNode: AccessibilityNodeInfo, userOrder: Int?, isClick: Boolean = true): Boolean {

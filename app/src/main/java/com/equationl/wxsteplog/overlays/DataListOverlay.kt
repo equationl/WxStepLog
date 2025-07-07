@@ -70,10 +70,12 @@ object DataListOverlay: AssistsServiceListener {
                     field = AssistsWindowWrapper(it.root, wmLayoutParams = AssistsWindowManager.createLayoutParams().apply {
                         width = (ScreenUtils.getScreenWidth() * 0.8).toInt()
                         height = (ScreenUtils.getScreenHeight() * 0.5).toInt()
+                        x = 100
+                        y = ScreenUtils.getScreenHeight() / 2 - 250
                     }, onClose = { hide() }).apply {
                         minWidth = (ScreenUtils.getScreenWidth() * 0.6).toInt()
                         minHeight = (ScreenUtils.getScreenHeight() * 0.4).toInt()
-                        initialCenter = true
+                        initialCenter = false
                         viewBinding.tvTitle.text = "查看数据"
                     }
                 }
