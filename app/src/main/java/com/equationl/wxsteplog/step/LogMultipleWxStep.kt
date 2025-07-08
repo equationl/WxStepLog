@@ -12,6 +12,8 @@ import com.equationl.wxsteplog.model.WxStepLogSetting
 import com.equationl.wxsteplog.util.AccessibilityUtil
 import com.equationl.wxsteplog.util.AccessibilityUtil.getLikeTextFromOrder
 import com.equationl.wxsteplog.util.AccessibilityUtil.includeByMathText
+import com.equationl.wxsteplog.util.DateTimeUtil
+import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
 import com.equationl.wxsteplog.util.LogWrapper
 import com.equationl.wxsteplog.util.Utils
 import com.ven.assists.AssistsCore
@@ -31,6 +33,8 @@ class LogMultipleWxStep : StepImpl() {
         private const val TAG = "LogMultipleWxStep"
         private const val SIMILARITY_THRESHOLD = 50
     }
+
+    private var stopDaySet = mutableSetOf<String>()
 
     override fun onImpl(collector: StepCollector) {
         collector.next(StepTag.STEP_1) { step ->
@@ -199,6 +203,14 @@ class LogMultipleWxStep : StepImpl() {
                             if (!isNeedLogAllList && alreadyLogNameList.size == setting.userNameList.size) {
                                 LogWrapper.log("已记录所有需要用户，返回", isForceShow = true)
                                 AssistsCore.back()
+
+                                if (setting.isAutoReset) {
+                                    val currentTime = DateTimeUtil.getCurrentMinute()
+                                    if (currentTime >= setting.restTime.first && System.currentTimeMillis().formatDateTime("yyyy-MM-dd") !in stopDaySet) {
+                                        return@next checkStopTime(setting)
+                                    }
+                                }
+
                                 val delay = Utils.getIntervalTime(setting)
                                 LogWrapper.log("间隔 $delay ms 后继续", isForceShow = true)
                                 delay(delay)
@@ -253,6 +265,14 @@ class LogMultipleWxStep : StepImpl() {
                 if (endFlag) {
                     LogWrapper.log("已到达最后一页，返回", isForceShow = true)
                     AssistsCore.back()
+
+                    if (setting.isAutoReset) {
+                        val currentTime = DateTimeUtil.getCurrentMinute()
+                        if (currentTime >= setting.restTime.first && System.currentTimeMillis().formatDateTime("yyyy-MM-dd") !in stopDaySet) {
+                            return@next checkStopTime(setting)
+                        }
+                    }
+
                     val delay = Utils.getIntervalTime(setting)
                     LogWrapper.log("间隔 $delay ms 后继续", isForceShow = true)
                     delay(delay)
@@ -336,6 +356,23 @@ class LogMultipleWxStep : StepImpl() {
         )
 
         return true
+    }
+
+    private suspend fun checkStopTime(setting: WxStepLogSetting): Step {
+        if (setting.restTime.second == null) {
+            // TODO 这里可以添加一个关闭程序或关闭屏幕或是返回主界面
+            LogWrapper.log("已到达设置的停止时间，且未设置恢复时间，停止运行", isForceShow = true)
+            return Step.none
+        }
+        else {
+            var currentTime = DateTimeUtil.getCurrentMinute()
+            var timeLeft = DateTimeUtil.calculateDuration(currentTime, setting.restTime.second!!)
+            LogWrapper.log("已到达设置的停止时间，将在 $timeLeft 分钟后恢复运行", isForceShow = true)
+            delay(timeLeft * 60_000L)
+            LogWrapper.log("恢复时间到，继续记录", isForceShow = true)
+            stopDaySet.add(System.currentTimeMillis().formatDateTime("yyyy-MM-dd"))
+            return Step.get(StepTag.STEP_4, data = setting)
+        }
     }
 
 }

@@ -43,6 +43,8 @@ import com.equationl.wxsteplog.overlays.MainOverlay
 import com.equationl.wxsteplog.ui.LocalNavController
 import com.equationl.wxsteplog.ui.view.continuousLog.widget.ContinuousLogSettingContent
 import com.equationl.wxsteplog.util.Utils
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.ven.assists.AssistsCore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -85,6 +87,8 @@ private fun ContinuousLogPage() {
     val randomIntervalValue = remember { mutableStateOf("30000") }
     val showDaraFilterUserName = remember { mutableStateOf("") }
     val isAutoRunning = remember { mutableStateOf(true) }
+    val isAutoReset = remember { mutableStateOf(false) }
+    val restTime = remember { mutableStateOf(Pair<Int, Int?>(0, null)) }
 
     LaunchedEffect(startState) {
         scope.launch {
@@ -97,6 +101,11 @@ private fun ContinuousLogPage() {
             randomIntervalValue.value = DataStoreUtils.getSyncData(DataKey.LOG_INTERVAL_TIME_RANDOM_RANGE, "30000")
             showDaraFilterUserName.value = DataStoreUtils.getSyncData(DataKey.SHOW_DATA_FILTER_USER, "")
             logUserModel.value = DataStoreUtils.getSyncData(DataKey.LOG_USER_MODE, LogSettingMode.Multiple.name).toLogUserMode() ?: LogSettingMode.Multiple
+            isAutoRunning.value = DataStoreUtils.getSyncData(DataKey.IS_AUTO_RUNNING, true)
+            isAutoReset.value = DataStoreUtils.getSyncData(DataKey.IS_AUTO_RESET, false)
+
+            val type = object : TypeToken<Pair<Int, Int?>>() {}.type
+            restTime.value  = Gson().fromJson<Pair<Int, Int>>(DataStoreUtils.getSyncData(DataKey.REST_TIME, ""), type) ?: Pair(0, null)
         }
     }
 
@@ -105,7 +114,7 @@ private fun ContinuousLogPage() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        ContinuousLogSettingContent(logUserModel, userNameList, intervalTime, isRandomInterval, randomIntervalValue, showDaraFilterUserName, isAllModelSpecialUser, isAutoRunning)
+        ContinuousLogSettingContent(logUserModel, userNameList, intervalTime, isRandomInterval, randomIntervalValue, showDaraFilterUserName, isAllModelSpecialUser, isAutoRunning, isAutoReset, restTime)
 
         OutlinedButton (
             onClick = {
@@ -125,6 +134,10 @@ private fun ContinuousLogPage() {
                         Toast.makeText(context, "请输入随机间隔时间", Toast.LENGTH_SHORT).show()
                         return@OutlinedButton
                     }
+                    if (isAutoReset.value && restTime.value.first == restTime.value.second) {
+                        Toast.makeText(context, "停止时间和开始时间不能相同", Toast.LENGTH_SHORT).show()
+                        return@OutlinedButton
+                    }
 
                     scope.launch {
                         DataStoreUtils.putSyncData(DataKey.LOG_USER_MODE, logUserModel.value.name)
@@ -136,6 +149,10 @@ private fun ContinuousLogPage() {
                         DataStoreUtils.putSyncData(DataKey.SHOW_DATA_FILTER_USER, showDaraFilterUserName.value)
                         DataStoreUtils.putSyncData(DataKey.WX_PKG_NAME, Constants.wxPkgName.value)
                         DataStoreUtils.putSyncData(DataKey.WX_LAUNCHER_PKG_NAME, Constants.wxLauncherPkg.value)
+                        DataStoreUtils.putSyncData(DataKey.IS_AUTO_RUNNING, isAutoRunning.value)
+                        DataStoreUtils.putSyncData(DataKey.IS_AUTO_RESET, isAutoReset.value)
+                        DataStoreUtils.putSyncData(DataKey.REST_TIME, restTime.value.toJson())
+
 
                         Constants.showDataFilterUserName = showDaraFilterUserName.value
 
@@ -148,7 +165,9 @@ private fun ContinuousLogPage() {
                                     isRandomInterval = isRandomInterval.value,
                                     randomIntervalValue = randomIntervalValue.value.toLong(),
                                     isAllModelSpecialUser = isAllModelSpecialUser.value,
-                                    isAutoRunning = isAutoRunning.value
+                                    isAutoRunning = isAutoRunning.value,
+                                    isAutoReset = isAutoReset.value,
+                                    restTime = restTime.value
                                 )
                             )
                         }

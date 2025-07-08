@@ -8,12 +8,12 @@ plugins {
 
 android {
     namespace = "com.equationl.wxsteplog"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.equationl.wxsteplog"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 7
         versionName = "1.0.7"
 

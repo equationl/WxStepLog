@@ -154,4 +154,37 @@ object DateTimeUtil {
         }
     }
 
+    fun min2HourMinString(min: Int): String {
+        val hour = min / 60
+        val minute = min % 60
+        return "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
+    }
+
+    fun min2HourMin(min: Int): Pair<Int, Int> {
+        val hour = (min / 60).toInt()
+        val minute = (min % 60).toInt()
+        return Pair(hour, minute)
+    }
+
+    fun hourMin2Min(hour: Int, minute: Int): Int {
+        return hour * 60 + minute
+    }
+
+    fun getCurrentMinute(): Int {
+        val calendar = Calendar.getInstance()
+        return calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
+    }
+
+    fun calculateDuration(currentTime: Int, resumeTime: Int): Int {
+        val stopTimeInMinutes = currentTime
+        var resumeTimeInMinutes = resumeTime
+
+        if (resumeTimeInMinutes < stopTimeInMinutes) {
+            // 跨天的情况
+            resumeTimeInMinutes += 24 * 60
+        }
+
+        return resumeTimeInMinutes - stopTimeInMinutes
+    }
+
 }

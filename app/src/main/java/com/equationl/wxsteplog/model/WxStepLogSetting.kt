@@ -7,5 +7,8 @@ data class WxStepLogSetting(
     val isRandomInterval: Boolean,
     val randomIntervalValue: Long,
     val isAllModelSpecialUser: Boolean,
-    val isAutoRunning: Boolean
+    val isAutoRunning: Boolean,
+    val isAutoReset: Boolean,
+    /** <停止时间(min),恢复时间(min)> */
+    val restTime: Pair<Int, Int?>
 )

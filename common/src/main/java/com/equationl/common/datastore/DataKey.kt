@@ -15,4 +15,7 @@ object DataKey {
     const val CSV_DELIMITER = "CSV_DELIMITER"
     const val WX_VIEW_LIMIT = "WX_VIEW_LIMIT"
     const val STEP_ORDER_VIEW_LIMIT = "ORDER_VIEW_LIMIT"
+    const val IS_AUTO_RUNNING = "IS_AUTO_RUNNING"
+    const val IS_AUTO_RESET = "IS_AUTO_RESET"
+    const val REST_TIME = "REST_TIME"
 }
