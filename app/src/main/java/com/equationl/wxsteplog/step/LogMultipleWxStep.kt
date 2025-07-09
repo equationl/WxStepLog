@@ -1,7 +1,9 @@
 package com.equationl.wxsteplog.step
 
+import android.accessibilityservice.AccessibilityService
 import android.content.ComponentName
 import android.content.Intent
+import android.os.Build
 import android.view.accessibility.AccessibilityNodeInfo
 import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.db.DbUtil
@@ -22,6 +24,7 @@ import com.ven.assists.AssistsCore.findById
 import com.ven.assists.AssistsCore.findFirstParentClickable
 import com.ven.assists.AssistsCore.getBoundsInScreen
 import com.ven.assists.AssistsCore.getChildren
+import com.ven.assists.service.AssistsService
 import com.ven.assists.stepper.Step
 import com.ven.assists.stepper.StepCollector
 import com.ven.assists.stepper.StepImpl
@@ -360,8 +363,11 @@ class LogMultipleWxStep : StepImpl() {
 
     private suspend fun checkStopTime(setting: WxStepLogSetting): Step {
         if (setting.restTime.second == null) {
-            // TODO 这里可以添加一个关闭程序或关闭屏幕或是返回主界面
             LogWrapper.log("已到达设置的停止时间，且未设置恢复时间，停止运行", isForceShow = true)
+            AssistsCore.home()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                AssistsService.instance?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN)
+            }
             return Step.none
         }
         else {
