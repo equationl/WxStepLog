@@ -62,5 +62,5 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.event.release.tag_name || github.event.inputs.tag_name }}
-          files: ${{steps.sign_app.outputs.signedReleaseFile}}
+          files: app/build/outputs/apk/release/*-signed.apk
       
