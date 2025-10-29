@@ -16,6 +16,6 @@ object DataBaseModule {
     @Singleton
     @Provides
     fun provideDataBase(@ApplicationContext app: Context) = run {
-        WxStepDB.create(app)
+        WxStepDB.getInstance(app)
     }
 }

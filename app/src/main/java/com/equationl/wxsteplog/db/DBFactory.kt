@@ -24,6 +24,21 @@ import com.equationl.wxsteplog.db.DbUtil.DATABASE_FILE_NAME
 //@TypeConverters(DBConverters::class)
 abstract class WxStepDB : RoomDatabase() {
     companion object {
+        @Volatile
+        private var INSTANCE: WxStepDB? = null
+
+        fun getInstance(context: Context): WxStepDB {
+            return INSTANCE ?: synchronized(this) {
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    WxStepDB::class.java,
+                    DATABASE_FILE_NAME
+                ).build()
+                INSTANCE = instance
+                instance
+            }
+        }
+
         fun create(context: Context, useInMemory: Boolean = false): WxStepDB {
             val databaseBuilder = if (useInMemory) {
                 Room.inMemoryDatabaseBuilder(context, WxStepDB::class.java)

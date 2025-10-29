@@ -7,7 +7,7 @@ import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
 object DbUtil {
     const val DATABASE_FILE_NAME = "wx_step_data.db"
 
-    val db by lazy { WxStepDB.create(App.instance) }
+    val db by lazy { WxStepDB.getInstance(App.instance) }
 
     suspend fun saveData(stepNum: Int?, likeNum: Int?, userName: String, userOrder: Int?, logUserMode: LogModel?) {
         val currentTime = System.currentTimeMillis()
