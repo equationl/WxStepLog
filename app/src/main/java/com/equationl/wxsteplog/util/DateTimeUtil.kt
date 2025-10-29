@@ -80,22 +80,38 @@ object DateTimeUtil {
      * */
     fun getWeeOfWeekDay(dayOfWeek: String): Long {
         val dayOfWeekInt = when (dayOfWeek.replace("周", "")) {
-            "一" -> 1
-            "二" -> 2
-            "三" -> 3
-            "四" -> 4
-            "五" -> 5
-            "六" -> 6
-            "日" -> 7
-            else -> 1
+            "一" -> Calendar.MONDAY
+            "二" -> Calendar.TUESDAY
+            "三" -> Calendar.WEDNESDAY
+            "四" -> Calendar.THURSDAY
+            "五" -> Calendar.FRIDAY
+            "六" -> Calendar.SATURDAY
+            "日" -> Calendar.SUNDAY
+            else -> Calendar.MONDAY
         }
 
         val cal = Calendar.getInstance()
-        cal[Calendar.DAY_OF_WEEK] = dayOfWeekInt
+        cal.firstDayOfWeek = Calendar.MONDAY // 设置周一为一周的第一天
+        cal.timeInMillis = getWeeOfToday() // 从今天开始计算
+        
+        // 获取当前是周几
+        val currentDayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
+        val targetDayOfWeek = dayOfWeekInt
+        
+        // 计算目标日期与今天相差的天数
+        var diffDays = targetDayOfWeek - currentDayOfWeek
+        
+        // 如果目标日期在今天之后，并且我们不希望获取未来日期，则减去一周
+        if (diffDays > 0) {
+            diffDays -= 7
+        }
+        
+        cal.add(Calendar.DAY_OF_MONTH, diffDays)
         cal[Calendar.HOUR_OF_DAY] = 0
         cal[Calendar.SECOND] = 0
         cal[Calendar.MINUTE] = 0
         cal[Calendar.MILLISECOND] = 0
+        
         return cal.timeInMillis
     }
 
