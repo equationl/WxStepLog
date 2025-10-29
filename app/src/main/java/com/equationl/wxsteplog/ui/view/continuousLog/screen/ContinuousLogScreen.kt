@@ -42,6 +42,7 @@ import com.equationl.wxsteplog.model.toLogUserMode
 import com.equationl.wxsteplog.overlays.MainOverlay
 import com.equationl.wxsteplog.ui.LocalNavController
 import com.equationl.wxsteplog.ui.view.continuousLog.widget.ContinuousLogSettingContent
+import com.equationl.wxsteplog.ui.view.continuousLog.widget.RunMode
 import com.equationl.wxsteplog.util.Utils
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -89,6 +90,8 @@ private fun ContinuousLogPage() {
     val isAutoRunning = remember { mutableStateOf(true) }
     val isAutoReset = remember { mutableStateOf(false) }
     val restTime = remember { mutableStateOf(Pair<Int, Int?>(0, null)) }
+    // 使用运行模式替代单独的开关
+    val runMode = remember { mutableStateOf(RunMode.AUTO) }
 
     LaunchedEffect(startState) {
         scope.launch {
@@ -103,6 +106,9 @@ private fun ContinuousLogPage() {
             logUserModel.value = DataStoreUtils.getSyncData(DataKey.LOG_USER_MODE, LogSettingMode.Multiple.name).toLogUserMode() ?: LogSettingMode.Multiple
             isAutoRunning.value = DataStoreUtils.getSyncData(DataKey.IS_AUTO_RUNNING, true)
             isAutoReset.value = DataStoreUtils.getSyncData(DataKey.IS_AUTO_RESET, false)
+            // 获取运行模式设置
+            val isSingleRun = DataStoreUtils.getSyncData(DataKey.IS_SINGLE_RUN, false)
+            runMode.value = if (isSingleRun) RunMode.SINGLE else RunMode.AUTO
 
             val type = object : TypeToken<Pair<Int, Int?>>() {}.type
             restTime.value  = Gson().fromJson<Pair<Int, Int>>(DataStoreUtils.getSyncData(DataKey.REST_TIME, ""), type) ?: Pair(0, null)
@@ -114,7 +120,7 @@ private fun ContinuousLogPage() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        ContinuousLogSettingContent(logUserModel, userNameList, intervalTime, isRandomInterval, randomIntervalValue, showDaraFilterUserName, isAllModelSpecialUser, isAutoRunning, isAutoReset, restTime)
+        ContinuousLogSettingContent(logUserModel, userNameList, intervalTime, isRandomInterval, randomIntervalValue, showDaraFilterUserName, isAllModelSpecialUser, isAutoRunning, isAutoReset, restTime, runMode)
 
         OutlinedButton (
             onClick = {
@@ -152,6 +158,8 @@ private fun ContinuousLogPage() {
                         DataStoreUtils.putSyncData(DataKey.IS_AUTO_RUNNING, isAutoRunning.value)
                         DataStoreUtils.putSyncData(DataKey.IS_AUTO_RESET, isAutoReset.value)
                         DataStoreUtils.putSyncData(DataKey.REST_TIME, restTime.value.toJson())
+                        // 保存运行模式设置
+                        DataStoreUtils.putSyncData(DataKey.IS_SINGLE_RUN, runMode.value == RunMode.SINGLE)
 
 
                         Constants.showDataFilterUserName = showDaraFilterUserName.value
@@ -167,7 +175,8 @@ private fun ContinuousLogPage() {
                                     isAllModelSpecialUser = isAllModelSpecialUser.value,
                                     isAutoRunning = isAutoRunning.value,
                                     isAutoReset = isAutoReset.value,
-                                    restTime = restTime.value
+                                    restTime = restTime.value,
+                                    isSingleRun = runMode.value == RunMode.SINGLE // 根据运行模式设置单次运行参数
                                 )
                             )
                         }

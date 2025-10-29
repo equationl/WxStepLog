@@ -137,6 +137,12 @@ class LogMultipleWxStepByHand : StepImpl() {
                                 LogWrapper.log("已记录所有需要用户，返回", isForceShow = true)
                                 AssistsCore.back()
 
+                                // 如果是单次运行模式，则停止运行
+                                if (setting.isSingleRun) {
+                                    LogWrapper.log("单次运行模式，记录完成，停止运行", isForceShow = true)
+                                    return@next Step.none
+                                }
+
                                 if (setting.isAutoReset) {
                                     val currentTime = DateTimeUtil.getCurrentMinute()
                                     if (currentTime >= setting.restTime.first && System.currentTimeMillis().formatDateTime("yyyy-MM-dd") !in stopDaySet) {
@@ -198,6 +204,12 @@ class LogMultipleWxStepByHand : StepImpl() {
                 if (endFlag) {
                     LogWrapper.log("已到达最后一页，返回", isForceShow = true)
                     AssistsCore.back()
+
+                    // 如果是单次运行模式，则停止运行
+                    if (setting.isSingleRun) {
+                        LogWrapper.log("单次运行模式，记录完成，停止运行", isForceShow = true)
+                        return@next Step.none
+                    }
 
                     if (setting.isAutoReset) {
                         val currentTime = DateTimeUtil.getCurrentMinute()

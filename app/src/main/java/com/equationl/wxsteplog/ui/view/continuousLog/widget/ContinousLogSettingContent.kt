@@ -20,6 +20,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -47,9 +48,14 @@ import com.equationl.wxsteplog.ui.widget.TimePickerDialog
 import com.equationl.wxsteplog.util.DateTimeUtil
 import com.vanpra.composematerialdialogs.rememberMaterialDialogState
 
+// 运行模式枚举
+enum class RunMode {
+    AUTO, SINGLE
+}
+
 /**
  *
- * @param restTime 停止运行时间，Pair(停止时间，恢复运行时间)，单位都是 min
+ * @param restTime 停止运行时间，Pair(停止时间，恢复时间)，单位都是 min
  * */
 @Composable
 fun ContinuousLogSettingContent(
@@ -63,6 +69,7 @@ fun ContinuousLogSettingContent(
     isAutoRunning: MutableState<Boolean>,
     isAutoReset: MutableState<Boolean>,
     restTime: MutableState<Pair<Int, Int?>>,
+    runMode: MutableState<RunMode>, // 使用运行模式替代单独的开关
 ) {
     var context = LocalContext.current
     var isShowMoreSetting by remember { mutableStateOf(false) }
@@ -72,29 +79,53 @@ fun ContinuousLogSettingContent(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically
+        // 运行模式选择（自动运行或单次运行）
+        Column(
+            horizontalAlignment = Alignment.Start,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
         ) {
-            Checkbox(
-                isAutoRunning.value,
-                onCheckedChange = {
-                    isAutoRunning.value = it
-                },
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-
-            Text("自动运行")
-
-            Spacer(Modifier.width(8.dp))
-
-            IconButton(onClick = {
-                Toast.makeText(
-                    context,
-                    "不勾选该选项则需要手动打开 微信-微信运动 后再点击悬浮窗中的 “开始记录” ",
-                    Toast.LENGTH_LONG
-                ).show()
-            }) {
-                Icon(Icons.Default.Info, contentDescription = "info")
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RadioButton(
+                    selected = runMode.value == RunMode.AUTO,
+                    onClick = { runMode.value = RunMode.AUTO }
+                )
+                Text("自动运行")
+                
+                Spacer(Modifier.width(8.dp))
+                
+                IconButton(onClick = {
+                    Toast.makeText(
+                        context,
+                        "应用会按照设定的时间间隔持续运行",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }) {
+                    Icon(Icons.Default.Info, contentDescription = "info")
+                }
+            }
+            
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RadioButton(
+                    selected = runMode.value == RunMode.SINGLE,
+                    onClick = { runMode.value = RunMode.SINGLE }
+                )
+                Text("单次运行")
+                
+                Spacer(Modifier.width(8.dp))
+                
+                IconButton(onClick = {
+                    Toast.makeText(
+                        context,
+                        "应用只运行一次就停止",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }) {
+                    Icon(Icons.Default.Info, contentDescription = "info")
+                }
             }
         }
 
@@ -260,7 +291,7 @@ private fun UserInputContent(
 ) {
     val dialogState = rememberMaterialDialogState()
 
-    userNameList.forEachIndexed { index, name ->
+    userNameList.forEachIndexed { index, name -> 
         OutlinedTextField(
             value = name,
             onValueChange = {

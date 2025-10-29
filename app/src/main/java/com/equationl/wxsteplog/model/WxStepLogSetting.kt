@@ -10,5 +10,6 @@ data class WxStepLogSetting(
     val isAutoRunning: Boolean,
     val isAutoReset: Boolean,
     /** <停止时间(min),恢复时间(min)> */
-    val restTime: Pair<Int, Int?>
+    val restTime: Pair<Int, Int?>,
+    val isSingleRun: Boolean = false
 )

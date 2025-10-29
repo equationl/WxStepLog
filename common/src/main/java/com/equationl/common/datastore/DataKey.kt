@@ -18,4 +18,5 @@ object DataKey {
     const val IS_AUTO_RUNNING = "IS_AUTO_RUNNING"
     const val IS_AUTO_RESET = "IS_AUTO_RESET"
     const val REST_TIME = "REST_TIME"
+    const val IS_SINGLE_RUN = "IS_SINGLE_RUN" // 添加单次运行设置键
 }
