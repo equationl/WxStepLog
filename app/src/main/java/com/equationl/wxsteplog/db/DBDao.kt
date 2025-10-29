@@ -63,4 +63,16 @@ interface WxStepHistoryDao{
 
     @Query("SELECT DISTINCT user_name FROM wx_step_history_table")
     suspend fun getCurrentUserList(): List<String>
+
+    // 删除指定记录的数据
+    @Query("DELETE FROM wx_step_history_table WHERE log_start_time=:logStartTime")
+    suspend fun deleteDataByLogStartTime(logStartTime: Long): Int
+
+    // 清空所有历史数据
+    @Query("DELETE FROM wx_step_history_table")
+    suspend fun deleteAllData(): Int
+
+//    // 查询指定记录时间范围内的数据，按logStartTime分组
+//    @Query("SELECT * FROM wx_step_history_table WHERE (data_time BETWEEN :startTime AND :endTime) AND user_name LIKE :userName AND log_start_time=:logStartTime ORDER BY data_time ASC")
+//    suspend fun queryRangeDataList(startTime: Long, endTime: Long, logStartTime: Long, userName: String = "%"): List<WxStepHistoryTable>
 }

@@ -317,6 +317,44 @@ class HistoryStatisticsViewModel @Inject constructor(
         }
     }
 
+    // 删除指定记录的数据
+    fun deleteHistoryLogData(logStartTime: Long, context: Context, onFinish: () -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val deletedCount = db.wxStepHistoryDB().deleteDataByLogStartTime(logStartTime)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "已删除 $deletedCount 条记录", Toast.LENGTH_SHORT).show()
+                    onFinish()
+                }
+                loadData()
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "删除失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                    onFinish()
+                }
+            }
+        }
+    }
+
+    // 清空所有历史数据
+    fun clearAllHistoryData(context: Context, onFinish: () -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val deletedCount = db.wxStepHistoryDB().deleteAllData()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "已清空 $deletedCount 条记录", Toast.LENGTH_SHORT).show()
+                    onFinish()
+                }
+                loadData()
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "清空失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                    onFinish()
+                }
+            }
+        }
+    }
+
     private suspend fun loadData(isFirstLoading: Boolean = false) = withContext(Dispatchers.IO) {
         _uiState.update { it.copy(isLoading = true) }
         val dao = db.wxStepHistoryDB()

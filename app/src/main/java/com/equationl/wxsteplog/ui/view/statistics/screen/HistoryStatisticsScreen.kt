@@ -28,14 +28,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.BackupTable
 import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.ImportContacts
 import androidx.compose.material.icons.outlined.InsertChartOutlined
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.TableRows
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -51,6 +54,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBarDefaults
@@ -105,6 +109,11 @@ fun HistoryStatisticsScreen(viewModel: HistoryStatisticsViewModel = hiltViewMode
     var isShowExportDialog by remember { mutableStateOf(false) }
     var isShowLoading by remember { mutableStateOf(false) }
     var loadingDialogContent by remember { mutableStateOf("") }
+    // 删除确认对话框状态
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showClearAllDialog by remember { mutableStateOf(false) }
+    var deleteLogStartTime by remember { mutableStateOf(0L) }
+    var deleteLogTitle by remember { mutableStateOf("") }
 
     BackHandler(state.detailId != null) {
         viewModel.onCloseShowDetail()
@@ -211,7 +220,10 @@ fun HistoryStatisticsScreen(viewModel: HistoryStatisticsViewModel = hiltViewMode
                     val intent = viewModel.createNewDatabaseFileIntent()
                     exportDbLauncher.launch(intent)
                 },
-                onCloseShowDetail = viewModel::onCloseShowDetail
+                onCloseShowDetail = viewModel::onCloseShowDetail,
+                onDeleteAll = {
+                    showClearAllDialog = true
+                }
             )
         },
         floatingActionButton = {
@@ -246,7 +258,17 @@ fun HistoryStatisticsScreen(viewModel: HistoryStatisticsViewModel = hiltViewMode
                 LoadingContent()
             }
             else {
-                HomeContent(state, collapsedFraction, viewModel::onChangeFilter, viewModel::onClickHistoryLogItem)
+                HomeContent(
+                    state, 
+                    collapsedFraction, 
+                    viewModel::onChangeFilter, 
+                    viewModel::onClickHistoryLogItem,
+                    onDeleteHistoryLog = { logStartTime, title ->
+                        deleteLogStartTime = logStartTime
+                        deleteLogTitle = title
+                        showDeleteDialog = true
+                    }
+                )
             }
         }
     }
@@ -277,6 +299,56 @@ fun HistoryStatisticsScreen(viewModel: HistoryStatisticsViewModel = hiltViewMode
             isShowLoading = false
         }
     }
+
+    // 删除确认对话框
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("确认删除") },
+            text = { Text("确定要删除记录时间：$deleteLogTitle 的数据吗？") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteHistoryLogData(deleteLogStartTime, context) {
+                            showDeleteDialog = false
+                        }
+                    }
+                ) {
+                    Text("确认")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+
+    // 清空所有数据确认对话框
+    if (showClearAllDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearAllDialog = false },
+            title = { Text("确认清空") },
+            text = { Text("确定要清空所有历史数据吗？此操作不可恢复！") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.clearAllHistoryData(context) {
+                            showClearAllDialog = false
+                        }
+                    }
+                ) {
+                    Text("确认")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearAllDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
 }
 
 
@@ -294,6 +366,7 @@ private fun TopBar(
     onExport: () -> Unit,
     onImport: () -> Unit,
     onExportDb: () -> Unit,
+    onDeleteAll: () -> Unit,
     onCloseShowDetail: () -> Unit,
 ) {
     val navController = LocalNavController.current
@@ -331,6 +404,16 @@ private fun TopBar(
         },
         actions = {
             if (isShowFilter) {
+                // 添加清空所有数据按钮
+                IconButton(
+                    onClick = onDeleteAll
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "清空所有数据"
+                    )
+                }
+
                 TooltipBox(
                     positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
                     tooltip = {
@@ -382,6 +465,10 @@ private fun TopBar(
                 onClickExportDb = {
                     isExpandMenu = false
                     onExportDb()
+                },
+                onClickDeleteAll = {
+                    isExpandMenu = false
+                    onDeleteAll()
                 }
             )
         }
@@ -404,7 +491,8 @@ private fun TopBarMoreFunction(
     onDismissRequest: () -> Unit,
     onClickExport: () -> Unit,
     onClickExportDb: () -> Unit,
-    onClickImport: () -> Unit
+    onClickImport: () -> Unit,
+    onClickDeleteAll: () -> Unit
 ) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismissRequest) {
         DropdownMenuItem(
@@ -434,6 +522,15 @@ private fun TopBarMoreFunction(
                 Icon(imageVector = Icons.Outlined.ImportContacts, contentDescription = "import")
             }
         )
+        DropdownMenuItem(
+            text = {
+                Text(text = "清空所有历史数据")
+            },
+            onClick = onClickDeleteAll,
+            leadingIcon = {
+                Icon(imageVector = Icons.Outlined.Delete, contentDescription = "delete all")
+            }
+        )
     }
 
 }
@@ -443,7 +540,8 @@ private fun HomeContent(
     state: HistoryStatisticsState,
     collapsedFraction: Float,
     onChangeFilter: (newFilter: HistoryStatisticsFilter) -> Unit,
-    onClickHistoryLogItem: (item: HistoryLogItemModel) -> Unit
+    onClickHistoryLogItem: (item: HistoryLogItemModel) -> Unit,
+    onDeleteHistoryLog: (logStartTime: Long, title: String) -> Unit
 ) {
 
     Column(
@@ -467,7 +565,7 @@ private fun HomeContent(
         }
         else {
             when (state.showType) {
-                StatisticsShowType.List -> ListContent(state, onClickHistoryLogItem)
+                StatisticsShowType.List -> ListContent(state, onClickHistoryLogItem, onDeleteHistoryLog)
                 StatisticsShowType.Chart -> ChartContent(state)
             }
         }
@@ -477,14 +575,15 @@ private fun HomeContent(
 @Composable
 private fun ListContent(
     state: HistoryStatisticsState,
-    onClickHistoryLogItem: (item: HistoryLogItemModel) -> Unit
+    onClickHistoryLogItem: (item: HistoryLogItemModel) -> Unit,
+    onDeleteHistoryLog: (logStartTime: Long, title: String) -> Unit
 ) {
     if (state.detailId != null) {
         ListContentByDetail(state)
     }
     else {
         when (state.filter.dataShowType) {
-            HistoryDataShowType.ByLog -> ListContentByLog(state, onClickHistoryLogItem)
+            HistoryDataShowType.ByLog -> ListContentByLog(state, onClickHistoryLogItem, onDeleteHistoryLog)
             HistoryDataShowType.ByAllData -> ListContentByDetail(state)
         }
     }
@@ -493,7 +592,8 @@ private fun ListContent(
 @Composable
 private fun ListContentByLog(
     state: HistoryStatisticsState,
-    onClickHistoryLogItem: (item: HistoryLogItemModel) -> Unit
+    onClickHistoryLogItem: (item: HistoryLogItemModel) -> Unit,
+    onDeleteHistoryLog: (logStartTime: Long, title: String) -> Unit
 ) {
     Column(
         Modifier
@@ -504,7 +604,7 @@ private fun ListContentByLog(
         ) {
             state.logItemList.forEach { item ->
                 item(key = item.id) {
-                    HistoryListItem(item) {
+                    HistoryListItem(item, onDeleteHistoryLog) {
                         onClickHistoryLogItem(item)
                     }
                 }
@@ -751,10 +851,11 @@ private fun ListCardContent(
 @Composable
 private fun HistoryListItem(
     item: HistoryLogItemModel,
+    onDeleteHistoryLog: (logStartTime: Long, title: String) -> Unit,
     onClickCard: () -> Unit,
 ) {
     Card(
-        onClick = onClickCard,
+        onClick = onClickCard, // 添加点击事件处理
         modifier = Modifier.padding(16.dp)
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -767,7 +868,9 @@ private fun HistoryListItem(
                     .padding(8.dp)
             ) {
                 Column(
-                    modifier = Modifier.fillMaxHeight(),
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(1f),
                     verticalArrangement = Arrangement.SpaceEvenly
                 ) {
                     Text(text = "记录时间：${item.title}", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
@@ -779,10 +882,25 @@ private fun HistoryListItem(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.End
                 ) {
-
                     Text(text = item.count.toString(), style = MaterialTheme.typography.headlineMedium)
                     Text("条数据", style = MaterialTheme.typography.bodySmall)
                 }
+            }
+            
+            // 删除按钮
+            IconButton(
+                onClick = {
+                    onDeleteHistoryLog(item.id, item.title)
+                },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Delete,
+                    contentDescription = "删除",
+                    tint = MaterialTheme.colorScheme.error
+                )
             }
         }
     }
