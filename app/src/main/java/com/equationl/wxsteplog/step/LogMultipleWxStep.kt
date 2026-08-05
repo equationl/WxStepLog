@@ -4,6 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Build
+import android.os.SystemClock
 import android.view.accessibility.AccessibilityNodeInfo
 import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.db.DbUtil
@@ -13,14 +14,17 @@ import com.equationl.wxsteplog.model.StepListIdModel
 import com.equationl.wxsteplog.model.WxStepLogSetting
 import com.equationl.wxsteplog.util.AccessibilityUtil
 import com.equationl.wxsteplog.util.AccessibilityUtil.getLikeTextFromOrder
+import com.equationl.wxsteplog.util.AccessibilityUtil.findFirstNodeById
+import com.equationl.wxsteplog.util.AccessibilityUtil.findFirstTextById
 import com.equationl.wxsteplog.util.AccessibilityUtil.includeByMathText
+import com.equationl.wxsteplog.util.AccessibilityUtil.recycleCompat
 import com.equationl.wxsteplog.util.DateTimeUtil
 import com.equationl.wxsteplog.util.DateTimeUtil.formatDateTime
+import com.equationl.wxsteplog.util.ContinuousReadMetrics
 import com.equationl.wxsteplog.util.LogWrapper
 import com.equationl.wxsteplog.util.Utils
 import com.ven.assists.AssistsCore
 import com.ven.assists.AssistsCore.click
-import com.ven.assists.AssistsCore.findById
 import com.ven.assists.AssistsCore.findFirstParentClickable
 import com.ven.assists.AssistsCore.getBoundsInScreen
 import com.ven.assists.AssistsCore.getChildren
@@ -38,6 +42,7 @@ class LogMultipleWxStep : StepImpl() {
     }
 
     private var stopDaySet = mutableSetOf<String>()
+    private val readMetrics = ContinuousReadMetrics()
 
     override fun onImpl(collector: StepCollector) {
         collector.next(StepTag.STEP_1) { step ->
@@ -61,8 +66,9 @@ class LogMultipleWxStep : StepImpl() {
             val setting = step.data as WxStepLogSetting
 
             val nodes = AssistsCore.getAllNodes()
-            for (node in nodes) {
-                if (node?.text?.contains("微信") == true) {
+            try {
+                for (node in nodes) {
+                    if (node.text?.contains("微信") != true) continue
                     val screen = node.getBoundsInScreen()
                     LogWrapper.log("当前【微信】的真实坐标为：${screen.top},${screen.right},${screen.bottom},${screen.left}")
                     LogWrapper.log("以1920x1080的基准坐标为：${AssistsCore.getY(1920, screen.top)},${AssistsCore.getX(1080, screen.right)},${AssistsCore.getY(1920, screen.bottom)},${AssistsCore.getX(1080, screen.left)}")
@@ -74,6 +80,8 @@ class LogMultipleWxStep : StepImpl() {
                         return@next Step.get(StepTag.STEP_3, data = setting)
                     }
                 }
+            } finally {
+                nodes.recycleCompat()
             }
 
             if (AssistsCore.getPackageName() == Constants.wxPkgName.value) {
@@ -91,14 +99,17 @@ class LogMultipleWxStep : StepImpl() {
         }.next(StepTag.STEP_3) { step ->
             val setting = step.data as WxStepLogSetting
             val nodes = AssistsCore.getAllNodes()
-            for (node in nodes) {
-                if (node?.text?.contains("微信运动") == true) {
+            try {
+                for (node in nodes) {
+                    if (node.text?.contains("微信运动") != true) continue
                     LogWrapper.log("已进入微信主页，点击【微信运动】")
                     node.findFirstParentClickable()?.click()
                     LogWrapper.log("等待打开微信运动")
                     delay(1000)
                     return@next Step.get(StepTag.STEP_4, data = setting)
                 }
+            } finally {
+                nodes.recycleCompat()
             }
 
             if (AssistsCore.getPackageName() == Constants.wxPkgName.value) {
@@ -117,8 +128,9 @@ class LogMultipleWxStep : StepImpl() {
         }.next(StepTag.STEP_4) { step ->
             val setting = step.data as WxStepLogSetting
             val nodes = AssistsCore.getAllNodes()
-            for (node in nodes) {
-                if (node?.text?.contains("步数排行榜") == true) {
+            try {
+                for (node in nodes) {
+                    if (node.text?.contains("步数排行榜") != true) continue
                     val screen = node.getBoundsInScreen()
                     LogWrapper.log("当前【步数排行榜】的真实坐标为：${screen.top},${screen.right},${screen.bottom},${screen.left}")
                     LogWrapper.log("以1920x1080的基准坐标为：${AssistsCore.getY(1920, screen.top)},${AssistsCore.getX(1080, screen.right)},${AssistsCore.getY(1920, screen.bottom)},${AssistsCore.getX(1080, screen.left)}")
@@ -130,6 +142,8 @@ class LogMultipleWxStep : StepImpl() {
                         return@next Step.get(StepTag.STEP_5, data = setting)
                     }
                 }
+            } finally {
+                nodes.recycleCompat()
             }
 
             if (AssistsCore.getPackageName() == Constants.wxPkgName.value) {
@@ -147,16 +161,22 @@ class LogMultipleWxStep : StepImpl() {
             return@next Step.repeat
         }.next(StepTag.STEP_5) { step ->
             val setting = step.data as WxStepLogSetting
+            readMetrics.beginIfNeeded()
             val nodes = AssistsCore.getAllNodes()
-            for (node in nodes) {
-                if (node?.text?.contains("正在加载") == true) {
+            try {
+                for (node in nodes) {
+                    if (node.text?.contains("正在加载") != true) continue
                     LogWrapper.log("正在加载中，等待……")
                     delay(Constants.runStepIntervalTime.intValue.toLong())
                     return@next Step.get(StepTag.STEP_5, data = setting)
                 }
+            } finally {
+                nodes.recycleCompat()
             }
 
+            var startedAt = SystemClock.elapsedRealtime()
             var listView = getListView()
+            readMetrics.addListLookupTime(SystemClock.elapsedRealtime() - startedAt)
 
             if (listView == null) {
                 LogWrapper.log("没有找到列表，返回第一步", isForceShow = true)
@@ -178,7 +198,7 @@ class LogMultipleWxStep : StepImpl() {
                 return@next Step.get(StepTag.STEP_1, data = setting)
             }
 
-            val alreadyLogNameList = mutableListOf<String>()
+            val alreadyLogNameList = mutableSetOf<String>()
             /** 是否需要记录所有的列表数据 */
             val isNeedLogAllList = setting.logUserMode == LogSettingMode.All
             /** 是否需要进入指定用户的详情中记录 */
@@ -192,12 +212,13 @@ class LogMultipleWxStep : StepImpl() {
                     break
                 }
 
+                var foundListItem = false
                 for (item in listChildren) {
                     if (item?.viewIdResourceName == idModel.itemParentId) {
-                        val orderText = item.findById(idModel.itemOrderId).firstOrNull()?.text
-                        val nameNode = item.findById(idModel.itemNameId).firstOrNull()
-                        val nameText = nameNode?.text
-                        val stepText = item.findById(idModel.itemStepId).firstOrNull()?.text
+                        foundListItem = true
+                        val orderText = item.findFirstTextById(idModel.itemOrderId)
+                        val nameText = item.findFirstTextById(idModel.itemNameId)
+                        val stepText = item.findFirstTextById(idModel.itemStepId)
                         val likeText = item.getLikeTextFromOrder(idModel)
 
                         LogWrapper.log("查找到数据，排名：$orderText, 名称：$nameText, 步数：$stepText, 点赞: $likeText")
@@ -205,6 +226,7 @@ class LogMultipleWxStep : StepImpl() {
                         if (!orderText.isNullOrBlank() && !nameText.isNullOrBlank() && !stepText.isNullOrBlank() && !likeText.isNullOrBlank()) {
                             if (!isNeedLogAllList && alreadyLogNameList.size == setting.userNameList.size) {
                                 LogWrapper.log("已记录所有需要用户，返回", isForceShow = true)
+                                readMetrics.finish("指定用户读取完成")
                                 AssistsCore.back()
 
                                 if (setting.isAutoReset) {
@@ -222,36 +244,44 @@ class LogMultipleWxStep : StepImpl() {
                             }
 
                             if (!isNeedLogAllList) {
-                                if (!setting.userNameList.contains(nameText.toString())) {
+                                if (!setting.userNameList.contains(nameText)) {
                                     LogWrapper.log("当前用户 $nameText 不在需要记录的列表中，忽略本次记录")
                                     continue
                                 }
                             }
-                            if (alreadyLogNameList.contains(nameText.toString())) {
+                            if (alreadyLogNameList.contains(nameText)) {
                                 LogWrapper.log("当前用户 $nameText 已记录过，忽略本次记录")
                                 continue
                             }
 
-                            if (isNeedEnterDetail && setting.userNameList.contains(nameText.toString())) {
+                            if (isNeedEnterDetail && setting.userNameList.contains(nameText)) {
                                 LogWrapper.log("当前用户 $nameText 需要记录详情，进入详情页")
-                                val result = getFromDetail(nameNode, orderText.toString().toIntOrNull())
-                                if (result) {
-                                    alreadyLogNameList.add(nameText.toString())
-                                    LogWrapper.log("已记录 $nameText 的详情数据，返回列表")
-                                    AssistsCore.back()
-                                    delay(Constants.runStepIntervalTime.intValue.toLong())
+                                val nameNode = item.findFirstNodeById(idModel.itemNameId)
+                                startedAt = SystemClock.elapsedRealtime()
+                                val result = try {
+                                    nameNode != null && getFromDetail(nameNode, orderText.toIntOrNull())
+                                } finally {
+                                    listOf(nameNode).recycleCompat()
+                                    readMetrics.addDetailWaitTime(SystemClock.elapsedRealtime() - startedAt)
                                 }
+                                if (result) {
+                                    alreadyLogNameList.add(nameText)
+                                }
+                                LogWrapper.log("详情读取结束，返回列表")
+                                AssistsCore.back()
+                                delay(Constants.runStepIntervalTime.intValue.toLong())
                             }
                             else {
-                                // save data
+                                startedAt = SystemClock.elapsedRealtime()
                                 DbUtil.saveData(
-                                    stepNum = stepText.toString().toIntOrNull(),
-                                    likeNum = likeText.toString().toIntOrNull(),
-                                    userName = nameText.toString(),
-                                    userOrder = orderText.toString().toIntOrNull(),
+                                    stepNum = stepText.toIntOrNull(),
+                                    likeNum = likeText.toIntOrNull(),
+                                    userName = nameText,
+                                    userOrder = orderText.toIntOrNull(),
                                     logUserMode = if (setting.logUserMode == LogSettingMode.Multiple) LogModel.Multiple else LogModel.ALL,
                                 )
-                                alreadyLogNameList.add(nameText.toString())
+                                readMetrics.addDbWriteTime(SystemClock.elapsedRealtime() - startedAt)
+                                alreadyLogNameList.add(nameText)
                             }
                         }
                         else {
@@ -259,14 +289,17 @@ class LogMultipleWxStep : StepImpl() {
                         }
                     }
                     else {
-                        runningErrorCount++
                         LogWrapper.log("未查找到列表项数据，忽略本次记录")
                     }
                 }
 
+                runningErrorCount = if (foundListItem) 0 else runningErrorCount + 1
+                if (foundListItem) readMetrics.onPageRead()
+
                 val endFlag = listView.includeByMathText("邀请朋友")
                 if (endFlag) {
                     LogWrapper.log("已到达最后一页，返回", isForceShow = true)
+                    readMetrics.finish("全部页面读取完成")
                     AssistsCore.back()
 
                     if (setting.isAutoReset) {
@@ -285,19 +318,26 @@ class LogMultipleWxStep : StepImpl() {
 
                 LogWrapper.log("本页已记录完成，滚动到下一页")
                 listView?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+                (listChildren + listOfNotNull(listView)).recycleCompat()
                 delay(Constants.runStepIntervalTime.intValue.toLong())
 
                 // 这里需要重新拿一下 listview 对象，不然不知道为什么 listView.getChildren() 返回的不是完整数据
-                listView = getListView()
-                if (listView == null) {
+                startedAt = SystemClock.elapsedRealtime()
+                val nextListView = getListView()
+                readMetrics.addListLookupTime(SystemClock.elapsedRealtime() - startedAt)
+                if (nextListView == null) {
                     runningErrorCount++
+                    listView = null
+                    listChildren = arrayListOf()
                     LogWrapper.log("没有查找到数据，忽略本页")
                     continue
                 }
+                listView = nextListView
                 listChildren = listView.getChildren()
             }
 
             LogWrapper.log("运行异常，返回上一步", isForceShow = true)
+            readMetrics.finish("连续空页面过多")
             return@next Step.get(StepTag.STEP_4, data = setting)
         }
     }
@@ -310,55 +350,50 @@ class LogMultipleWxStep : StepImpl() {
         return AccessibilityUtil.getListView()
     }
 
-    private suspend fun getFromDetail(nameNode: AccessibilityNodeInfo, userOrder: Int?, isClick: Boolean = true): Boolean {
-        if (isClick) {
-            LogWrapper.log("点击【${nameNode.text}】")
-            nameNode.findFirstParentClickable()?.click()
-        }
+    private suspend fun getFromDetail(nameNode: AccessibilityNodeInfo, userOrder: Int?): Boolean {
+        val userName = nameNode.text?.toString() ?: return false
+        LogWrapper.log("点击【$userName】")
+        nameNode.findFirstParentClickable()?.click()
 
-        delay(Constants.runStepIntervalTime.intValue.toLong())
-        val nodes = AssistsCore.getAllNodes()
+        while (true) {
+            delay(Constants.runStepIntervalTime.intValue.toLong())
+            val nodes = AssistsCore.getAllNodes()
+            try {
+                if (nodes.any { it.text == "正在加载" }) {
+                    LogWrapper.log("正在加载中，等待……")
+                    continue
+                }
 
-        if (nodes.find { it.text == "正在加载"} != null) {
-            LogWrapper.log("正在加载中，等待……")
-            getFromDetail(nameNode, userOrder, false)
-        }
+                val findKeyNode = nodes.find { it.text == "步数" }
+                if (findKeyNode == null) {
+                    // 加载提示可能先于实际内容消失，继续等待，不因设备或网络较慢丢数据。
+                    LogWrapper.log("详情数据尚未出现，继续等待……")
+                    continue
+                }
 
-        val findKeyNode = nodes.find { it.text == "步数" }
-        if (findKeyNode == null) {
-            LogWrapper.log("没有找到步数关键数据，忽略本次记录")
-            return false
-        }
+                val keyNodeBound = findKeyNode.getBoundsInScreen()
+                val dataList = nodes
+                    .filter {
+                        it.className == "android.widget.TextView" &&
+                            it.text?.toString()?.toIntOrNull() != null &&
+                            abs(it.getBoundsInScreen().top - keyNodeBound.top) < SIMILARITY_THRESHOLD
+                    }
+                    .sortedBy { it.getBoundsInScreen().left }
 
-        val dataList = mutableListOf<AccessibilityNodeInfo>()
-        val keyNodeBound = findKeyNode.getBoundsInScreen()
-        for (node in nodes) {
-            val nodeBound = node.getBoundsInScreen()
-            if (abs(nodeBound.top - keyNodeBound.top) < SIMILARITY_THRESHOLD) {
-                dataList.add(node)
+                if (dataList.size != 2) {
+                    LogWrapper.log("查找的数据不完整，忽略本次记录")
+                    return false
+                }
+
+                val stepNum = dataList[0].text.toString().toIntOrNull()
+                val likeNum = dataList[1].text.toString().toIntOrNull()
+                LogWrapper.log("查找到数据，步数：$stepNum, 点赞: $likeNum")
+                DbUtil.saveData(stepNum, likeNum, userName, userOrder, LogModel.Single)
+                return true
+            } finally {
+                nodes.recycleCompat()
             }
         }
-
-        dataList.removeIf { it.className !=  "android.widget.TextView" || it.text.toString().toIntOrNull() == null}
-        dataList.sortBy { it.getBoundsInScreen().left }
-
-        if (dataList.size != 2) {
-            LogWrapper.log("查找的数据不完整，忽略本次记录")
-            AssistsCore.back()
-            return false
-        }
-
-        LogWrapper.log("查找到数据，步数：${dataList[0].text}, 点赞: ${dataList[1].text}")
-        // save data
-        DbUtil.saveData(
-            stepNum = dataList[0].text.toString().toIntOrNull(),
-            likeNum = dataList[1].text.toString().toIntOrNull(),
-            userName = nameNode.text.toString(),
-            userOrder = userOrder,
-            logUserMode = LogModel.Single
-        )
-
-        return true
     }
 
     private suspend fun checkStopTime(setting: WxStepLogSetting): Step {
