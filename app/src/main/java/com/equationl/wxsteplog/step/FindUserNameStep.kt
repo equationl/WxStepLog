@@ -6,6 +6,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import com.equationl.wxsteplog.constants.Constants
 import com.equationl.wxsteplog.constants.Constants.wxLauncherPkg
 import com.equationl.wxsteplog.constants.Constants.wxPkgName
+import com.equationl.wxsteplog.overlays.LogOverlay
 import com.equationl.wxsteplog.overlays.MainOverlay
 import com.equationl.wxsteplog.util.LogWrapper
 import com.ven.assists.AssistsCore
@@ -23,7 +24,7 @@ class FindUserNameStep : StepImpl() {
     companion object {
         private const val TAG = "FindUserNameStep"
 
-        private val nameSet = mutableMapOf<String, MutableSet<String>>()
+        private val nameSet = mutableMapOf<String?, MutableSet<String>>()
     }
 
     override fun onImpl(collector: StepCollector) {
@@ -81,7 +82,7 @@ class FindUserNameStep : StepImpl() {
             while (true) {
                 for (item in listNodes) {
                     if (item.className == "android.widget.TextView" && !item?.text.isNullOrBlank()) {
-                        LogWrapper.log("找到一个好友：${item.text}")
+                        LogWrapper.log("找到一个文本节点：${item.text}")
                         val id = item.viewIdResourceName
                         if (nameSet[id] == null) {
                             nameSet[id] = mutableSetOf()
@@ -122,12 +123,18 @@ class FindUserNameStep : StepImpl() {
             LogWrapper.log("运行异常，结束运行", isForceShow = true)
             return@next Step.get(StepTag.STEP_4)
         }.next(StepTag.STEP_4) { step ->
-            // 仅保留 id 最多的数据
-            val maxNameList = nameSet.maxByOrNull { it.value.size }
-            val newList = maxNameList?.value
-            if (newList != null) {
+            nameSet.forEach { (id, texts) ->
+                LogWrapper.log("候选文本分组：id=$id，数量=${texts.size}")
+            }
+
+            val newList = UserNameListResolver.resolve(nameSet.values)
+            val friendCount = step.data as? Int
+            if (friendCount != null && newList.size < friendCount) {
+                LogWrapper.log("联系人候选数量 ${newList.size} 少于微信显示的好友数量 $friendCount，请检查候选分组日志")
+            }
+
+            if (newList.isNotEmpty() || friendCount == 0) {
                 LogWrapper.log("实际找到 ${newList.size} 个好友", isForceShow = true)
-                newList.addAll(Constants.allUserNameList)
                 Constants.allUserNameList.clear()
                 Constants.allUserNameList.addAll(newList)
             }
@@ -142,6 +149,7 @@ class FindUserNameStep : StepImpl() {
 
             delay(500)
 
+            LogOverlay.hide()
             MainOverlay.hide()
 
             return@next Step.none
