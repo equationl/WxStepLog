@@ -159,21 +159,36 @@ class LogWxHistoryStep : StepImpl() {
                 }
 
                 LogWrapper.log("本页已记录完成，滚动到上一页")
-                // TODO 如果只有一页时会始终认为滚动成功，导致无法判断是否滚动完成
-                val endFlag = listView?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD) != true
+                val currentListView = getRecyclerView()
+                if (currentListView == null) {
+                    runningErrorCount++
+                    LogWrapper.log("滚动前没有查找到历史消息列表，忽略本次滚动")
+                    continue
+                }
 
-                if (endFlag) {
+                val beforeScroll = getHistoryPageSnapshot(currentListView)
+                val scrollAccepted = currentListView.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)
+
+                if (!scrollAccepted) {
                     LogWrapper.log("已到达最后一页，程序结束，请关闭本窗口后自行返回 APP", isForceShow = true)
                     return@next Step.none
                 }
 
-                delay(Constants.runStepIntervalTime.intValue.toLong())
-                listView = getRecyclerView()
-                if (listView == null) {
+                delay(Constants.runStepIntervalTime.intValue.toLong().coerceAtLeast(500L))
+                val nextListView = getRecyclerView()
+                if (nextListView == null) {
                     runningErrorCount++
                     LogWrapper.log("没有查找到数据，忽略本页")
                     continue
                 }
+
+                val afterScroll = getHistoryPageSnapshot(nextListView)
+                if (HistoryPageScrollGuard.hasReachedEnd(beforeScroll, afterScroll)) {
+                    LogWrapper.log("滚动后历史消息列表未发生变化，已到达最后一页，程序结束，请关闭本窗口后自行返回 APP", isForceShow = true)
+                    return@next Step.none
+                }
+
+                listView = nextListView
             }
 
             LogWrapper.log("运行异常，返回上一步")
@@ -329,6 +344,23 @@ class LogWxHistoryStep : StepImpl() {
 
     private fun getListView(): AccessibilityNodeInfo? {
         return AccessibilityUtil.getListView()
+    }
+
+    private fun getHistoryPageSnapshot(listView: AccessibilityNodeInfo): List<HistoryCardSnapshot> {
+        return listView.getChildren().mapNotNull { cardParent ->
+            val cardSubItemList = cardParent?.getChildren() ?: return@mapNotNull null
+            if (!isLegalHistoryCard(cardSubItemList)) return@mapNotNull null
+
+            val headerText = cardSubItemList.firstOrNull()?.text?.toString()
+                ?.takeIf { it.isNotBlank() }
+                ?: return@mapNotNull null
+            val bounds = cardParent.getBoundsInScreen()
+            HistoryCardSnapshot(
+                headerText = headerText,
+                top = bounds.top,
+                bottom = bounds.bottom,
+            )
+        }
     }
 
     // TODO 这里判断条件没有考虑其他消息内容，例如点赞消息（虽然从点赞消息点进去内容记录也可以）
